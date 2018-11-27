@@ -1,4 +1,3 @@
-
 typedef struct list_char_handler list_c_handler; /*Gestore della lista*/
 typedef struct node_char node_char; /*Bi-lista di caratteri*/
 
