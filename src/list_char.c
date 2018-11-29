@@ -40,13 +40,34 @@ typedef struct node_char {
 	struct list_char_handler *handler;
 } node_char;
 
-int size( node_char *head ){
+/**
+ * @brief
+ * PreCondition: N/A
+ * PostCondition: Dato un nodo, ritorna la sua lunghezza della lista a seguire (o precedere) da tale nodo
+ * se b_reachLast != 0 conta fino all'ultimo elemento della lista ritornado lunghezza positiva
+ * altrimenti conta fino al primo elemento ritornando lunghezza negativa
+ * @param head 
+ * @return La lunghezza della lista
+ */
+int size( node_char *head, int b_reachLast){
 	if( head == NULL ){
 		return 0;
 	}
-	return 1 + size( head->next );
+	if( b_reachLast ){
+		return 1 + size( head->next, b_reachLast);
+	}
+	else{
+		return -1 + size( head->prev, b_reachLast );
+	}
 }
 
+/**
+ * @brief Datp una lista ritorna l'ultimo elemento della lista 
+ * se la lista è vuota ritorna NULL
+ * 
+ * @param head 
+ * @return node_char*  Il puntatore all'ultimo nodo della lista
+ */
 node_char *last( node_char *head ){
 	if( head == NULL ){
 		return NULL;
@@ -59,6 +80,143 @@ node_char *last( node_char *head ){
 	}
 }
 
+/**
+ * @brief 
+ * PreCondition: 	N/A
+ * PostCondition:	Data una lista e un indice ritorna il nodo alla "index-esima"  posizione (anche negativa ) a partire dal nodo head
+ * 					ritorna NULL se head == NULL oppure index < 0 oppure index è superiore (outofbound) alla lunghezza fino agli estremi
+ *
+ * @param head 
+ * @param index 
+ * @return node_char* Il nodo alla "index-esima" posizione
+ */
+node_char *get( node_char *head, int index ){
+
+	if( head == NULL ){ // Considera anche caso index sia oltre la lunghezza di fino agli estremi ( prev o next ) poichè head diventerà NULL se l'ultimo head->next o head->prev == NULL
+		return NULL;
+	}
+	else if( index == 0){
+		return head;
+	}
+	else{
+		if( index > 0){
+			return get( head->next, index-1);
+		}
+		else{
+			return get( head->prev, index+1);
+		}
+	}
+}
+/*
+// Obsoleto e non testato
+node_char *get_from_handler( list_c_handler *handler, int index){
+	node_char *tmp = NULL;
+	if( handler != NULL && index > 0){
+		if( handler->index == index ){
+			return handler->current;
+		}
+		else{
+			if(handler->index > index ){
+				tmp = prev( handler );
+			}
+			else{
+				tmp = next( handler );
+			}
+
+			if( tmp == NULL ){
+				return NULL;
+			}
+			return get( handler, index );
+		}
+	}
+	else{
+		return NULL;
+	}
+}
+*/
+
+/**
+ * @brief 
+ * PreCondition: N/A
+ * PostCondition: Dati due nodi di lista e un indice, ritorna la prima lista con inserita la seconda a partire dalla posizione 'index-esima'
+ * e collega l'ultimo elemento della seconda lista con la parte restante della prima, ovvero dalla posizione 'index'+1 della prima lista.
+ * (Funziona anche con index negativo)
+ * es: insert( c-i-a-o, c-i-a-o, 2 ) ->c-i-c-i-a-o-a-o
+ * 
+ * @param head 
+ * @param node 
+ * @param index 
+ * @return node_char* nodo alla posizione index dopo inserimento
+ */
+node_char *insert( node_char *head, node_char *node, int index ){
+	if( head == NULL  ){
+		return NULL;
+	}
+	else if( index == 0){
+		if( head != NULL ){
+			if( head->prev != NULL){ // casistica normale
+				head->prev->next = node;
+				node_char *node_last = last( node );
+				node_last->next = head;
+				head->prev = node_last;
+			}
+			else{ // caso insert( l, i-s-t, size(l) )
+				head->next = node;
+			}
+		}
+		else{ // caso insert( NULL, l-i-s-t, *any )
+			head = node;
+		}
+	}
+	else{
+		if( index > 0 ){
+			return insert( head->next, node, index-1);
+		}
+		else{
+			return insert( head->prev, node, index+1);
+		}
+	}
+}
+/*
+// Obosleto e non testato
+int insert( list_c_handler *handler, char value, int index ){
+	if( index < 0 || handler == NULL ||  index > ( size( handler )-1 ) ){
+		return -1;
+	}
+	else{
+		node_char *prev_node = get( handler, index - 1 );
+		if( prev_node == NULL ){ // non esiste l'indice precedente
+			return false;
+		}
+		else{
+			node_char *next_node = prev_node->next;
+			node_char *current_node = node_char_new( value, false, handler );
+			current_node->prev = prev_node;
+			prev_node->next = current_node;
+			current_node->next = next_node;
+			next_node->prev = current_node;
+			return true;
+		}
+	}
+}
+*/
+
+/**
+ * @brief 
+ * 	PreCondition:
+		si suppone che b_create_handler sia = 1 solo se si vuole creare una nuova lista completa ( e non un singolo nodo )
+		mentre se è già presente una lista ma si vuole aggiungere un nodo, il chiamante deve passare una struttura "handler" di una lista precedentemente creata
+	PostCondition:
+		Crea una nuovo nodo di una lista char assegnando il valore specificato ad esso.
+		se "b_create_handler" = 0 assegna il parametro "handler" come struttura "handler" della nuova lista che verrà creata
+		se "b_create_handler" != 0 alloca nuova memoria al puntatore "handler" quindi crea una nuova struttura condivisa con tutti nodi della lista:
+			la struttura "handler" contiene sempre il puntatore alla testa (->head) ed alla coda (->tail)
+ * 
+ * @param value 
+ * @param b_create_handler 
+ * @param handler 
+ * @return node_char* 
+ */
 node_char *node_char_new( char value, const unsigned short int b_create_handler, list_c_handler *handler ){
 	node_char *head;
 	head = ( node_char* ) malloc( sizeof( node_char ) );
@@ -90,10 +248,9 @@ node_char *node_char_reverse( node_char *head ){
 }
 
 void node_char_print( node_char *head ){
-	node_char *tmp = head;
-	while( tmp != NULL){
-		printf("%c", tmp->value);
-		tmp = tmp->next;
+	if( head != NULL ){
+		printf("%c", head->value);
+		node_char_print( head->next);
 	}
 }
 
@@ -151,66 +308,5 @@ node_char *dequeue( list_c_handler *handler ){
 	}
 	else{
 		return NULL;
-	}
-}
-
-node_char *get( list_c_handler *handler, int index){
-	node_char *tmp = NULL;
-	if( handler != NULL && index > 0){
-		if( handler->index == index ){
-			return handler->current;
-		}
-		else{
-			if(handler->index > index ){
-				tmp = prev( handler );
-			}
-			else{
-				tmp = next( handler );
-			}
-
-			if( tmp == NULL ){
-				return NULL
-			}
-			return get( handler, index );
-		}
-	}
-	else{
-		return NULL;
-	}
-}
-
-int insert( node_char *head, node_char *node, int index ){
-	if( index < 0 ){
-		return -1;
-	}
-	else if( index == 0){
-		head->prev->next = node;
-		node_char *node_last = last( node );
-		node_last->next = head;
-		head->prev = node_last;
-	}
-	else{
-		return insert( head, node, index - 1);
-	}
-}
-
-int insert( list_c_handler *handler, char value, int index ){
-	if( index < 0 || handler == NULL ||  index > ( size( handler )-1 ) ){
-		return -1;
-	}
-	else{
-		node_char *prev_node = get( handler, index - 1 );
-		if( prev_node == NULL ){ // non esiste l'indice precedente
-			return false;
-		}
-		else{
-			node_char *next_node = prev_node->next;
-			node_char *current_node = node_char_new( value, false, handler );
-			current_node->prev = prev_node;
-			prev_node->next = current_node;
-			current_node->next = next_node;
-			next_node->prev = current_node;
-			return true;
-		}
 	}
 }
