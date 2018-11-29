@@ -185,7 +185,7 @@ int insert( node_char *head, node_char *node, int index ){
 	}
 	else if( index == 0){
 		head->prev->next = node;
-		node_last = last( node );
+		node_char *node_last = last( node );
 		node_last->next = head;
 		head->prev = node_last;
 	}
