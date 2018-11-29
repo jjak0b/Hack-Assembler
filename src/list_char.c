@@ -40,6 +40,25 @@ typedef struct node_char {
 	struct list_char_handler *handler;
 } node_char;
 
+int size( node_char *head ){
+	if( head == NULL ){
+		return 0;
+	}
+	return 1 + size( head->next );
+}
+
+node_char *last( node_char *head ){
+	if( head == NULL ){
+		return NULL;
+	}
+	else if( head->next == NULL ){
+		return head;
+	}
+	else{
+		return last( head->next);
+	}
+}
+
 node_char *node_char_new( char value, const unsigned short int b_create_handler, list_c_handler *handler ){
 	node_char *head;
 	head = ( node_char* ) malloc( sizeof( node_char ) );
@@ -79,36 +98,119 @@ void node_char_print( node_char *head ){
 }
 
 node_char *next( list_c_handler *handler ){
-	handler->current = handler->current->next;
-	handler->index += 1;
-
-	return handler->current;
+	if( handler != NULL ){
+		if( handler->current != NULL ){
+			handler->current = handler->current->next;
+			handler->index += 1;
+		}
+		return handler->current;
+	}
+	else{
+		return NULL;
+	}
 }
 
 node_char *prev( list_c_handler *handler ){
-	handler->current = handler->current->prev;
-	handler->index -= 1;
-
-	return handler->current;
+	if( handler != NULL ){
+		if( handler->current != NULL ){
+			handler->current = handler->current->prev;
+			handler->index -= 1;
+		}
+		return handler->current;
+	}
+	else{
+		return NULL;
+	}
 }
 
 list_c_handler *enqueue( list_c_handler *handler, char value){
-	node_char *old_tail = handler->tail;
-	node_char *new_tail = node_char_new( value, false, handler );
-	new_tail->prev = old_tail;
-	new_tail->next = NULL; // dovrebbe essere già a NULL dato che era in coda...
-	old_tail->next = new_tail;
-	handler->tail = new_tail;
-	return handler;
+	if( handler != NULL){
+		node_char *old_tail = handler->tail;
+		node_char *new_tail = node_char_new( value, false, handler );
+		new_tail->prev = old_tail;
+		new_tail->next = NULL; // dovrebbe essere già a NULL dato che era in coda...
+		old_tail->next = new_tail;
+		handler->tail = new_tail;
+		return handler;
+	}
+	else {
+		return NULL;
+	}
 }
 
 node_char *dequeue( list_c_handler *handler ){
-	node_char *old_head = handler->head;	
-	handler->head = old_head->next;
-	if( handler->current == old_head ){
-		handler->current = handler->head;
+	if( handler != NULL ){
+		node_char *old_head = handler->head;	
+		handler->head = old_head->next;
+		if( handler->current == old_head ){
+			handler->current = handler->head;
+		}
+		old_head->prev = NULL; // dovrebbe essere già a NULL dato che era in testa...
+		old_head->next->prev = NULL;
+		return old_head;
 	}
-	old_head->prev = NULL; // dovrebbe essere già a NULL dato che era in testa...
-	old_head->next->prev = NULL;
-	return old_head;
+	else{
+		return NULL;
+	}
+}
+
+node_char *get( list_c_handler *handler, int index){
+	node_char *tmp = NULL;
+	if( handler != NULL && index > 0){
+		if( handler->index == index ){
+			return handler->current;
+		}
+		else{
+			if(handler->index > index ){
+				tmp = prev( handler );
+			}
+			else{
+				tmp = next( handler );
+			}
+
+			if( tmp == NULL ){
+				return NULL
+			}
+			return get( handler, index );
+		}
+	}
+	else{
+		return NULL;
+	}
+}
+
+int insert( node_char *head, node_char *node, int index ){
+	if( index < 0 ){
+		return -1;
+	}
+	else if( index == 0){
+		head->prev->next = node;
+		node_last = last( node );
+		node_last->next = head;
+		head->prev = node_last;
+	}
+	else{
+		return insert( head, node, index - 1);
+	}
+}
+
+int insert( list_c_handler *handler, char value, int index ){
+	if( index < 0 || handler == NULL ||  index > ( size( handler )-1 ) ){
+		return -1;
+	}
+	else{
+		node_char *prev_node = get( handler, index - 1 );
+		if( prev_node == NULL ){ // non esiste l'indice precedente
+			return false;
+		}
+		else{
+			node_char *next_node = prev_node->next;
+			node_char *current_node = node_char_new( value, false, handler );
+			current_node->prev = prev_node;
+			prev_node->next = current_node;
+			current_node->next = next_node;
+			next_node->prev = current_node;
+			return true;
+		}
+	}
 }
