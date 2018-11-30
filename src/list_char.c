@@ -1,5 +1,6 @@
-#include "list_char.h";
+#include "list_char.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include "utility.h"
 
 /*
@@ -29,7 +30,7 @@
  * @param head 
  * @return La lunghezza della lista
  */
-int size( node_char *head, int b_reachLast){
+int size( node_char *head, bool b_reachLast){
 	if( head == NULL ){
 		return 0;
 	}
@@ -197,7 +198,7 @@ int insert( list_c_handler *handler, char value, int index ){
  * @param handler 
  * @return node_char* 
  */
-node_char *node_char_new( char value, const unsigned short int b_create_handler, list_c_handler *handler ){
+node_char *node_char_new( char value, const bool b_create_handler, list_c_handler *handler ){
 	node_char *head;
 	head = ( node_char* ) malloc( sizeof( node_char ) );
 
@@ -261,7 +262,7 @@ node_char *prev( list_c_handler *handler ){
 }
 
 list_c_handler *enqueue( list_c_handler *handler, char value){
-	int b_create_handler = handler == NULL;
+	bool b_create_handler = handler == NULL;
 	node_char *new_tail = node_char_new( value, b_create_handler, handler );
 	if( b_create_handler ){
 		handler = new_tail->handler;

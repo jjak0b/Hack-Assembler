@@ -1,5 +1,8 @@
-typedef struct list_char_handler list_c_handler; /*Gestore della lista*/
-typedef struct node_char node_char; /*Bi-lista di caratteri*/
+#ifndef LIST_CHAR_H
+#define LIST_CHAR_H
+
+struct list_char_handler; // typedef struct list_char_handler list_c_handler; /*Gestore della lista*/
+struct node_char; // typedef struct node_char node_char; /*Bi-lista di caratteri*/
 
 typedef struct list_char_handler {
 	struct node_char *head; 	/*Punta alla testa ( primo elemento ) della lista*/
@@ -21,6 +24,8 @@ typedef struct node_char {
 	struct list_char_handler *handler;
 } node_char;
 
+#include "utility.h"
+
 /**
  * @brief
  * PreCondition: N/A
@@ -30,7 +35,7 @@ typedef struct node_char {
  * @param head 
  * @return La lunghezza della lista
  */
-int size( node_char *head, int b_reachLast);
+int size( node_char *head, bool b_reachLast);
 
 /**
  * @brief Datp una lista ritorna l'ultimo elemento della lista 
@@ -92,7 +97,7 @@ int insert( list_c_handler *handler, char value, int index )
  * @param handler 
  * @return node_char* 
  */
-node_char *node_char_new( char value, const unsigned short int b_create_handler, list_c_handler *handler );
+node_char *node_char_new( char value, const bool b_create_handler, list_c_handler *handler );
 
 node_char *node_char_reverse( node_char *head );
 
@@ -105,3 +110,5 @@ node_char *prev( list_c_handler *handler );
 list_c_handler *enqueue( list_c_handler *handler, char value);
 
 node_char *dequeue( list_c_handler *handler );
+
+#endif
