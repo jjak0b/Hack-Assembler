@@ -1,3 +1,4 @@
+#include "list_char.h";
 #include <stdio.h>
 #include "utility.h"
 
@@ -18,27 +19,6 @@
 				|
 				NULL
 */
-
-
-typedef struct list_char_handler {
-	struct node_char *head; 	/*Punta alla testa ( primo elemento ) della lista*/
-	struct node_char *tail; 	/*Punta alla coda ( ultimo elemento valido non NULL ) della lista*/
-	struct node_char *current; 	/*Punta al nodo attuale preso in considerazione, il chiamante itera tra i nodi con next() o prev()*/
-	int index; 				/*Indice dell'elemento puntato (current)*/
-} list_c_handler;
-
-typedef struct node_char {
-	char value;							/*valore del nodo*/
-	struct node_char *next;				/*puntatore al nodo successivo*/
-	struct node_char *prev;				/*puntatore al nodo precedente*/
-	/*
-	*	gestore della lista:
-		- ogni nodo ha un gestore come riferimento
-		- tutti gli elementi di una lista devono avere lo stesso handler
-		- il chiamante richiama le funzioni per iterare tra i nodi ed ha sempre i riferimenti degli estrami puntati
-	*/
-	struct list_char_handler *handler;
-} node_char;
 
 /**
  * @brief
@@ -281,18 +261,17 @@ node_char *prev( list_c_handler *handler ){
 }
 
 list_c_handler *enqueue( list_c_handler *handler, char value){
-	if( handler != NULL){
-		node_char *old_tail = handler->tail;
-		node_char *new_tail = node_char_new( value, false, handler );
-		new_tail->prev = old_tail;
-		new_tail->next = NULL; // dovrebbe essere già a NULL dato che era in coda...
-		old_tail->next = new_tail;
-		handler->tail = new_tail;
-		return handler;
+	int b_create_handler = handler == NULL;
+	node_char *new_tail = node_char_new( value, b_create_handler, handler );
+	if( b_create_handler ){
+		handler = new_tail->handler;
 	}
-	else {
-		return NULL;
-	}
+	node_char *old_tail = handler->tail;
+	new_tail->prev = old_tail;
+	new_tail->next = NULL; // dovrebbe essere già a NULL dato che era in coda...
+	old_tail->next = new_tail;
+	handler->tail = new_tail;
+	return handler;
 }
 
 node_char *dequeue( list_c_handler *handler ){
