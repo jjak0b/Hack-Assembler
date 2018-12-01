@@ -12,62 +12,80 @@
 #ifndef FILE_OUTPUT_EXTENSION
 #define FILE_OUTPUT_EXTENSION ".hack"
 #endif
-/*
+
 typedef struct symbol{
 	char *key;
 	int value;
 } symbol;
 
-	symbol s_table0[] = {
-		{ .key = "R0", .value = 0 },
-		{ .key = "R1", .value = 1 },
-		{ .key = "R2", .value = 2 },
-		{ .key = "R3", .value = 3 },
-		{ .key = "R4", .value = 4 },
-		{ .key = "R5", .value = 5 },
-		{ .key = "R6", .value = 6 },
-		{ .key = "R7", .value = 7 },
-		{ .key = "R8", .value = 8 },
-		{ .key = "R9", .value = 9 },
-		{ .key = "R10", .value = 10 },
-		{ .key = "R11", .value = 11 },
-		{ .key = "R12", .value = 12 },
-		{ .key = "R13", .value = 13 },
-		{ .key = "R14", .value = 14 },
-		{ .key = "R15", .value = 15 },
-		{ .key = "SCREEN", .value = 16384 },
-		{ .key = "KBD", .value = 24576 },
-		{ .key = "SP", .value = 0 },
-		{ .key = "LCL", .value = 1 },
-		{ .key = "ARG", .value = 2 },
-		{ .key = "THIS", .value = 3 },
-		{ .key = "THAT", .value = 4 }
-	};
+symbol *new_symbol( char *key, int value){
+	symbol *s = malloc(sizeof( symbol ) );
+	s->key = key;
+	s->value = value;
+	return s;
+}
 
-	list_handler s_table = {
-		.value = { .key = "R0", .value = 0 },
-		.next = {
-			.value = { .key = "R1", .value = 1 },
-			.next = {
-				.value = { .key = "R0", .value = 0 },
-			}
+void print_symbols( list_node *head ){
+	symbol *s = NULL;
+	if( head != NULL ){
+		s = (symbol*)head->value;
+		if( s != NULL ){
+			printf("key: '%s'\tvalue: '%d'\n", s->key, s->value);
 		}
-	};*/
+		print_symbols( head->next );
+	}
+	else{
+		printf("\n");
+	}
+}
+
+list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
+	lh_symbol_table = NULL;
+	symbol *s;
+	char reg[4];
+	char *str_RN;
+	char str_N[3];
+	// crea le etichette dedicate ai registri
+	const int size_str_RN = 4;
+	for( int i = 0; i < 16; i+= 1){
+		str_RN = (char*)malloc(sizeof(char) * size_str_RN);
+		strncpy( str_RN, "R", 2 );
+		int_toString( i, str_N, size_str_RN-1 ); // converte il valore di i da numero ad una stringa, e la inserisce in str_N
+		strncat( str_RN, str_N, size_str_RN-1);// Ri
+		lh_symbol_table = enqueue( lh_symbol_table, new_symbol( str_RN, i ) );
+	}
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "SCREEN", 16384 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "KBD", 24576 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "SP", 0 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "LCL", 1 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "ARG", 2 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "THIS", 3 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "THAT", 4 ) );
+	
+	return lh_symbol_table;
+}
 
 list_handler *assembler( list_handler *lh_input ){	
+	list_handler *lh_symbol_table = NULL;
+	lh_symbol_table = init_default_symbol_table( lh_symbol_table );
+	print_symbols( lh_symbol_table->head );
+	list_handler *lh_output = lh_input;// tmp
+	/*
 	list_handler *lh_output = NULL;
 	list_node *node_current = lh_input->head;
 	while( node_current != NULL ){
 		// do stuff
 		node_current = next(lh_input);
-	}
+	}*/
 	return lh_output;
 }
 
+
 int main( int nArgs, char **args ){
+
 	if( nArgs > 1 && nArgs < 3){
-		char *filename = args[1];
 		char *ptr_char = NULL; // usato temporaneamente
+		char *filename = args[1];		
 		list_handler *lh_input = NULL, *lh_output = NULL;
 		
 		if( filename == NULL ){
@@ -88,12 +106,19 @@ int main( int nArgs, char **args ){
 						printf("ERRORE: Il file '%s' risulta vuoto\n", filename );	
 					}
 					else{
-						lh_output = lh_input; // testing copia contenuto
 						printf("file '%s' letto con successo\n", filename);
-						printf("caratteri letti: %d\n", size( lh_output->head, true ) );
 						
-						// lh_output = assembler( lh_input ); // elabora il contenuto del file, restituendo il contenuto da scrivere su file
+						#ifdef DEBUG
+						printf("caratteri letti: %d\n", size(  lh_input->head, true ) );
+						list_node_print( "%c", lh_input->head );
+						#endif
+
+						lh_output = assembler( lh_input ); // elabora il contenuto del file, restituendo il contenuto da scrivere su file
+
+						#ifdef DEBUG
+						printf("caratteri elaborati: %d\n", size(  lh_output->head, true ) );
 						list_node_print( "%c", lh_output->head );
+						#endif
 
 						int length_estension = strlen( FILE_OUTPUT_EXTENSION );
 						int length_filename = strlen( filename );

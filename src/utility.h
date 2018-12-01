@@ -1,6 +1,7 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#define DEBUG /*IMPORTANTE: Disabilitare quando prima di consegnare*/
 /*
 	Per usare meno spazio occupato da una variabile che io considero essere booleana,
 	potrei considerare 'unsigned char' di 1 solo byte per usare il booleano (memorizzando comunque interi) ma non vorrei essere frainteso
@@ -37,7 +38,7 @@ void *replaceFilenameExtension( char *filename, int size_filename, const char *e
 
 /**
  * @brief
- * PreCondition: N/A
+ * PreCondition: 	N/A
  * PostCondition: dato il nome di un file.estensione come stringa e un list_handler,
  * inserisce nella coda i caratteri letti dal file specificato
  * @param *filename 
@@ -46,6 +47,31 @@ void *replaceFilenameExtension( char *filename, int size_filename, const char *e
  */
 list_handler *readFile( char *filename, list_handler *l_handler );
 
+/**
+ * @brief 
+ * PreCondition: I 'value' puntati dai 'list_node' della lista gestita da 'list_handler', devono essere convertibili a char
+ * PostCondition: Dato il nome di un file.estensione come stringa e un list_handler,
+ * scrive gli elementi della lista in un file con il nome indicato ( se non esite, viene creato )
+ * @param filename 
+ * @param l_handler 
+ * @return int 0 se è impossbile aprire/scrivere il file, 1 altrimenti
+ */
 bool writeFile( char *filename, list_handler *l_handler );
+
+/**
+ * @brief 
+ * PreCondition: 	destination_size >= 2
+ * 				 	se numero di caratteri di value > destination_size allora verranno inserite solo le prime 'destination_size-1' cifre meno significative nel buffer
+ * 					poichè verrà inserito il carattere '\0' alla posizione destination_size-1
+ *						es int_toString( 1234, destination, 4 ) -> destination = "234".
+ * PostCondition: 	Inserisce nell buffer destination le cifre del valore passato come caratteri
+ * @param value 
+ * @param destination 
+ * @param destination_size 
+ * @return true  se sono state inserite nel buffer tutte le cifre di value
+ * @return false se numero di caratteri di value > destination_size 
+ * 					
+ */
+bool int_toString( int value, char *destination, int destination_size );
 
 #endif

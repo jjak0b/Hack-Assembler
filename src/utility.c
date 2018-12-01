@@ -37,10 +37,11 @@ list_handler *readFile( char *filename, list_handler *l_handler ){
     if( fin != NULL){
         while( !feof( fin ) ){
 			if( fscanf( fin, "%c", &c) == 1 ){
-				printf("c_:%c", c);
+				#ifdef DEBUG
+				printf("letto: '%c' -> ASCII: %d\n", c, (int)c);
+				#endif				
 				ptr_char = (char*)malloc( sizeof(char) );
 				*ptr_char = c;
-				printf("%c\n", *ptr_char);
 				l_handler = enqueue( l_handler, ptr_char );
 			}
         }
@@ -55,11 +56,11 @@ list_handler *readFile( char *filename, list_handler *l_handler ){
 
 /**
  * @brief 
- * PreCondition: N/A
+ * PreCondition: I 'value' puntati dai 'list_node' della lista gestita da 'list_handler', devono essere convertibili a char
  * PostCondition: Dato il nome di un file.estensione come stringa e un list_handler,
  * scrive gli elementi della lista in un file con il nome indicato ( se non esite, viene creato )
  * @param filename 
- * @param list_handler 
+ * @param l_handler 
  * @return int 0 se è impossbile aprire/scrivere il file, 1 altrimenti
  */
 bool writeFile( char *filename, list_handler *l_handler ){
@@ -95,4 +96,45 @@ void *replaceFilenameExtension( char filename[], int size_filename, const char e
 	}
 
 	strncat( filename, extension, strlen(extension) );
+}
+
+/**
+ * @brief 
+ * PreCondition: 	destination_size >= 2
+ * 				 	se numero di caratteri di value > destination_size allora verranno inserite solo le prime 'destination_size-1' cifre meno significative nel buffer
+ * 					poichè verrà inserito il carattere '\0' alla posizione destination_size-1
+ *						es int_toString( 1234, destination, 4 ) -> destination = "234".
+ * PostCondition: 	Inserisce nell buffer destination le cifre del valore passato come caratteri
+ * @param value 
+ * @param destination 
+ * @param destination_size 
+ * @return true  se sono state inserite nel buffer tutte le cifre di value
+ * @return false se numero di caratteri di value > destination_size 
+ * 					
+ */
+bool int_toString( int value, char *destination, int destination_size ){
+	if( destination_size  < 1){
+		return false;
+	}
+	else if( destination_size < 2){
+		destination[0] = '\0';
+		return false;
+	}
+	else{
+		int state = true;
+		if( value / 10 ==  0 ){ // value ha una cifra
+			destination[0] = (char)(48+value);
+			destination[1] = '\0';
+		}
+		else{
+			state = int_toString( value / 10 , destination, destination_size - 1 );
+			 // concateno la/le cifra/e precedenti con quella appena estratta
+			char tmp[2];
+			int ultima_cifra = value % 10;
+			tmp[ 0 ] = (char)(48+ultima_cifra);
+			tmp[ 1 ] = '\0';
+			strncat( destination, tmp, destination_size );
+		}
+		return state;
+	}
 }
