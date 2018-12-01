@@ -11,7 +11,7 @@ typedef unsigned short int bool;
 #define true 1
 #define false 0
 
-#include "list_char.h"
+#include "list.h"
 
 /**
  * @brief 
@@ -38,14 +38,14 @@ void *replaceFilenameExtension( char *filename, int size_filename, const char *e
 /**
  * @brief
  * PreCondition: N/A
- * PostCondition: dato il nome di un file.estensione come stringa e un list_c_handler,
+ * PostCondition: dato il nome di un file.estensione come stringa e un list_handler,
  * inserisce nella coda i caratteri letti dal file specificato
  * @param *filename 
  * @param *list_handler
  * @return NULL se è impossbile aprire il file, un handler della nuova lista altrimenti
  */
-list_c_handler *readFile( char *filename, list_c_handler *list_handler );
+list_handler *readFile( char *filename, list_handler *l_handler );
 
-bool writeFile( char *filename, list_c_handler *list_handler );
+bool writeFile( char *filename, list_handler *l_handler );
 
 #endif

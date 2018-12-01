@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "list_char.h"
+#include "list.h"
 
 bool strEndWith( char *str, char *str_suffix){
 
@@ -23,21 +23,25 @@ bool strEndWith( char *str, char *str_suffix){
 /**
  * @brief
  * PreCondition: N/A
- * PostCondition: dato il nome di un file.estensione come stringa e un list_c_handler,
+ * PostCondition: dato il nome di un file.estensione come stringa e un list_handler,
  * inserisce nella coda i caratteri letti dal file specificato
  * @param *filename 
  * @param *list_handler
  * @return NULL se è impossbile aprire il file, un handler della nuova lista altrimenti
  */
-list_c_handler *readFile( char *filename, list_c_handler *list_handler ){
+list_handler *readFile( char *filename, list_handler *l_handler ){
     FILE *fin;
     char c = '\0';
+	char *ptr_char = NULL;
     fin = fopen( filename, "r");
     if( fin != NULL){
         while( !feof( fin ) ){
 			if( fscanf( fin, "%c", &c) == 1 ){
-				printf("c_:%c\n", c);
-				list_handler = enqueue( list_handler, c );
+				printf("c_:%c", c);
+				ptr_char = (char*)malloc( sizeof(char) );
+				*ptr_char = c;
+				printf("%c\n", *ptr_char);
+				l_handler = enqueue( l_handler, ptr_char );
 			}
         }
         fclose( fin );
@@ -46,27 +50,29 @@ list_c_handler *readFile( char *filename, list_c_handler *list_handler ){
         return NULL;
     }
 
-    return list_handler;
+    return l_handler;
 }
 
 /**
  * @brief 
  * PreCondition: N/A
- * PostCondition: Dato il nome di un file.estensione come stringa e un list_c_handler,
+ * PostCondition: Dato il nome di un file.estensione come stringa e un list_handler,
  * scrive gli elementi della lista in un file con il nome indicato ( se non esite, viene creato )
  * @param filename 
  * @param list_handler 
  * @return int 0 se è impossbile aprire/scrivere il file, 1 altrimenti
  */
-bool writeFile( char *filename, list_c_handler *list_handler ){
+bool writeFile( char *filename, list_handler *l_handler ){
 	FILE *fout;
+	char *ptr_char = NULL;
     fout = fopen( filename, "w");
     if( fout != NULL){
-		list_handler->current = list_handler->head;
-		node_char *current = list_handler->current;
+		l_handler->current = l_handler->head;
+		list_node *current = l_handler->current;
         while( !feof( fout ) && current != NULL){
-			fprintf( fout, "%c", current->value );
-			current = next( list_handler);
+			ptr_char = current->value;
+			fprintf( fout, "%c", *ptr_char );
+			current = next( l_handler);
         }
         fclose( fout );
     }

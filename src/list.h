@@ -1,28 +1,28 @@
-#ifndef LIST_CHAR_H
-#define LIST_CHAR_H
+#ifndef LIST_H
+#define LIST_H
 
-struct list_char_handler; // typedef struct list_char_handler list_c_handler; /*Gestore della lista*/
-struct node_char; // typedef struct node_char node_char; /*Bi-lista di caratteri*/
+struct list_handler; // typedef struct list_handler list_handler; /*Gestore della lista*/
+struct list_node; // typedef struct list_node list_node; /*Bi-lista di caratteri*/
 
-typedef struct list_char_handler {
-	struct node_char *head; 	/*Punta alla testa ( primo elemento ) della lista*/
-	struct node_char *tail; 	/*Punta alla coda ( ultimo elemento valido non NULL ) della lista*/
-	struct node_char *current; 	/*Punta al nodo attuale preso in considerazione, il chiamante itera tra i nodi con next() o prev()*/
+typedef struct list_handler {
+	struct list_node *head; 	/*Punta alla testa ( primo elemento ) della lista*/
+	struct list_node *tail; 	/*Punta alla coda ( ultimo elemento valido non NULL ) della lista*/
+	struct list_node *current; 	/*Punta al nodo attuale preso in considerazione, il chiamante itera tra i nodi con next() o prev()*/
 	int index; 				/*Indice dell'elemento puntato (current)*/
-} list_c_handler;
+} list_handler;
 
-typedef struct node_char {
-	char value;							/*valore del nodo*/
-	struct node_char *next;				/*puntatore al nodo successivo*/
-	struct node_char *prev;				/*puntatore al nodo precedente*/
+typedef struct list_node {
+	void *value;						/*puntatore a un indirizzo generico*/
+	struct list_node *next;				/*puntatore al nodo successivo*/
+	struct list_node *prev;				/*puntatore al nodo precedente*/
 	/*
 	*	gestore della lista:
 		- ogni nodo ha un gestore come riferimento
 		- tutti gli elementi di una lista devono avere lo stesso handler
 		- il chiamante richiama le funzioni per iterare tra i nodi ed ha sempre i riferimenti degli estrami puntati
 	*/
-	struct list_char_handler *handler;
-} node_char;
+	struct list_handler *handler;
+} list_node;
 
 #include "utility.h"
 
@@ -35,16 +35,16 @@ typedef struct node_char {
  * @param head 
  * @return La lunghezza della lista
  */
-int size( node_char *head, bool b_reachLast);
+int size( list_node *head, bool b_reachLast);
 
 /**
  * @brief Datp una lista ritorna l'ultimo elemento della lista 
  * se la lista è vuota ritorna NULL
  * 
  * @param head 
- * @return node_char*  Il puntatore all'ultimo nodo della lista
+ * @return list_node*  Il puntatore all'ultimo nodo della lista
  */
-node_char *last( node_char *head );
+list_node *last( list_node *head );
 
 /**
  * @brief 
@@ -54,12 +54,12 @@ node_char *last( node_char *head );
  *
  * @param head 
  * @param index 
- * @return node_char* Il nodo alla "index-esima" posizione
+ * @return list_node* Il nodo alla "index-esima" posizione
  */
-node_char *get( node_char *head, int index );
+list_node *get( list_node *head, int index );
 /*
 // Obsoleto e non testato
-node_char *get_from_handler( list_c_handler *handler, int index);
+list_node *get_from_handler( list_handler *handler, int index);
 */
 
 /**
@@ -73,12 +73,12 @@ node_char *get_from_handler( list_c_handler *handler, int index);
  * @param head 
  * @param node 
  * @param index 
- * @return node_char* nodo alla posizione index dopo inserimento
+ * @return list_node* nodo alla posizione index dopo inserimento
  */
-node_char *insert( node_char *head, node_char *node, int index );
+list_node *insert( list_node *head, list_node *node, int index );
 /*
 // Obosleto e non testato
-int insert( list_c_handler *handler, char value, int index )
+int insert( list_handler *handler, char value, int index )
 */
 
 /**
@@ -95,20 +95,27 @@ int insert( list_c_handler *handler, char value, int index )
  * @param value 
  * @param b_create_handler 
  * @param handler 
- * @return node_char* 
+ * @return list_node* 
  */
-node_char *node_char_new( char value, const bool b_create_handler, list_c_handler *handler );
+list_node *list_node_new( void *value, const bool b_create_handler, list_handler *handler );
 
-node_char *node_char_reverse( node_char *head );
+list_node *list_node_reverse( list_node *head );
 
-void node_char_print( node_char *head );
+/**
+ * @brief Stampa i valori degli elementi di una
+ * Precondition: valore puntato da head->value deve essere un tipo supportato da printf (es char*, char, int, float, ecc..)
+ * 
+ * @param format formato di stampa del valore: la stringa viene passata a printf, quindi usare come se fosse tale funzione
+ * @param head testa della lista da cui verranno stampati gli elementi
+ */
+void list_node_print( const char *format, list_node *head);
 
-node_char *next( list_c_handler *handler );
+list_node *next( list_handler *handler );
 
-node_char *prev( list_c_handler *handler );
+list_node *prev( list_handler *handler );
 
-list_c_handler *enqueue( list_c_handler *handler, char value);
+list_handler *enqueue( list_handler *handler, void *value);
 
-node_char *dequeue( list_c_handler *handler );
+list_node *dequeue( list_handler *handler );
 
 #endif

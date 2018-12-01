@@ -1,11 +1,11 @@
-assembler: main.o list_char.o utility.o
-	gcc -o assembler main.o list_char.o utility.o
+assembler: main.o list.o utility.o
+	gcc -o assembler main.o list.o utility.o
 
-main.o: main.c list_char.h utility.h
+main.o: main.c list.h utility.h
 	gcc -c main.c
 
-list_char.o: list_char.c list_char.h
-	gcc -c list_char.c
+list.o: list.c list.h
+	gcc -c list.c
 
 utility.o: utility.c utility.h
 	gcc -c utility.c
