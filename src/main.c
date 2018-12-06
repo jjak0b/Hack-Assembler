@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cstdlib.h>
 #include "utility.h"
 #include "list.h"
 #include <string.h>
+#include <cstdlib>
 
 #define FILE_INPUT_EXTENSION ".asm" // estensione personalizzabile
 #ifndef FILE_INPUT_EXTENSION
@@ -89,95 +89,105 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 	int row = 0; // riga attuale della rom ( senza commenti o label )
 	bool b_store_label = false; // quando = true i caratteri venngono memorizzati in lh_labelBuffer
 	bool b_ignore_line = false;// quando true i caratteri vengono ignorati finche il flag non cambia stato ( a fine riga)
-	while( node != NULL ){
-		value = (char*)node->value;
+	bool b_all_labels_read = false;
 
-		if( *value != ' ' && *value != '\t' ){
-			if( *value != '\r') // ignoro questo carattere durante filtro dei caratteri
-			{
-				// ignora i commenti
-				if( *value == '/'  ){
-					if( node->next != NULL && ( node->next->value ) == '/' ){
-						b_ignore_line = true;
-						node = node->next;
-					}
-					else{
-						printf( "Errore: sintassi errata (%s) a riga %d\n","Commento non valido", "", row );
-					}
-				}
-				
-				if( !b_ignore_line){
-					if( *value == '('){
-						b_store_label = true; // inizio a memorizzare la label
-					}
-					else if( *value == ')'){ // uso ')' come delimitatore di fine label
-						/* 
-							sono a fine istruzione e stavo memorizzando la label:
-							se la stringa memorizzata non è nella tabella simboli
-								allora la salvo per usarla in seguito ...
-							
-							sostituisco la label dell'input con la parte di stringa data con il valore corretto
-						*/
-						if( b_store_label ){
-							char *str_label = toString( lh_labelBuffer->head, NULL );
-							symbol *s = getFromSymbolTable( lh_symbol_table, str_label );
-							if( s == NULL){ // aggiungo il nuovo simbolo alla lista con indirizzo prossima istruzione
-								lh_symbol_table = enqueue( lh_symbol_table, new_symbol( str_label, row + 1 ) );
-							}
-							b_store_label = false;
-							node_start_of_line->next = node->next;
-						}
-					}
-					else if( b_store_label ){
-						lh_labelBuffer = enqueue( lh_labelBuffer, value);
-					}
-					else if( *value == '@' ){// inizio a memporizzare nel buffer i caratteri seguenti dal prossimo carattere
-						b_store_label = true;
-					}
-								
-					if( !b_store_label ){ // non voglio inseire i caratteri delle label che voglio sostituire
-						lh_output = enqueue( lh_output, value );
-					}
-				}
+	for( int i = 0; i < 2; i+=1){
+		// il primo ciclo si occuperà di leggere le label e rimoverle nel codice come anche i commenti,
+		// il secondo ciclo si occuperà di sostituire le variabili e le label
+		while( node != NULL ){
+			value = (char*)node->value;
 
-				if( *value == '\n' ){
-					if( b_store_label ){ // stavo memorizzando una label
-						int size_str = 0;
-						char *str_label = toString( lh_labelBuffer->head, &size_str );
-						symbol *s = getFromSymbolTable( lh_symbol_table, str_label );
-						if( s == NULL){ // aggiungo il nuovo simbolo alla lista con indirizzo per una variabile disponibile
-							int possible_address = atoi( str_label );
-							if( str_label[0] != '0' && possible_address != 0 ){// la label è un indirizzo
-								s = new_symbol( str_label, possible_address );
-							}
-							else if( str_label[0] == '0' && size_str <= 2 && possible_address == 0){// la label ha indirizzo 0
-								s = new_symbol( str_label, 0 );
-							}
-							else{ // la label è per una variabile (stringa)
-								s = new_symbol( str_label, address );
-							}
-							lh_symbol_table = enqueue( lh_symbol_table, s );
+			// if( !b_all_labels_read ){
+				if( *value != ' ' && *value != '\t' && *value != '\r'){ // ignoro questi caratteri durante filtro dei caratteri
+					// ignora i commenti
+					if( *value == '/'  ){
+						if( node->next != NULL && ( node->next->value ) == '/' ){
+							b_ignore_line = true;
+							node = node->next;
 						}
-						// converto il numero in stringa eaggiungo ogni singolo carattere (eccetto '\0')
-						// nella lista di output
-						// dopo @ : invece che scrivere il nome della variabile inserisce l'indirizzo assegnato
-						char *str_address = int_to_str( s->value );
-						int length_str_address = strlen( str_address );
-						for( int i = 0; i < length_str_address; i+= 1 ){
-							lh_output = enqueue( lh_output, &str_address[i] );
+						else{
+							printf( "Errore: sintassi errata (%s) a riga %d\n","Commento non valido", "", row );
 						}
-						b_store_label = false;
 					}
 					
-					if( !b_ignore_line ){// non sto ignorando la memorizzazione, quindi tengo traccia della prossima istruzione
-						row += 1;
+					if( !b_ignore_line){
+						if( *value == '('){
+							b_store_label = true; // inizio a memorizzare la label
+						}
+						else if( *value == ')'){ // uso ')' come delimitatore di fine label
+							/* 
+								sono a fine istruzione e stavo memorizzando la label:
+								se la stringa memorizzata non è nella tabella simboli
+									allora la salvo per usarla in seguito ...
+								
+								sostituisco la label dell'input con la parte di stringa data con il valore corretto
+							*/
+							if( b_store_label ){
+								char *str_label = list_to_String( lh_labelBuffer->head, NULL );
+								symbol *s = getFromSymbolTable( lh_symbol_table, str_label );
+								if( s == NULL){ // aggiungo il nuovo simbolo alla lista con indirizzo prossima istruzione
+									lh_symbol_table = enqueue( lh_symbol_table, new_symbol( str_label, row + 1 ) );
+								}
+								b_store_label = false;
+								node_start_of_line->next = node->next;
+							}
+						}
+						else if( b_store_label ){
+							lh_labelBuffer = enqueue( lh_labelBuffer, value);
+						}
+						else if( *value == '@' ){// inizio a memporizzare nel buffer i caratteri seguenti dal prossimo carattere
+							b_store_label = true;
+						}
+									
+						if( !b_store_label ){ // non voglio inseire i caratteri delle label che voglio sostituire
+							lh_output = enqueue( lh_output, value );
+						}
 					}
-					b_ignore_line = false; // quando sono a capo il non ho pià l'effetto del commento
-					node_start_of_line = node->next;// tengo traccia del primo dono della riga
+
+					if( *value == '\n' ){
+						if( b_store_label ){ // stavo memorizzando una label
+							// non sto più memorizzando
+							b_store_label = false;
+							int size_str = 0;
+							char *str_label = list_to_String( lh_labelBuffer->head, &size_str );// converte quello che ho memorizzato in stringa
+							symbol *s = getFromSymbolTable( lh_symbol_table, str_label );
+							if( s == NULL){ // aggiungo il nuovo simbolo alla lista con indirizzo per una variabile disponibile
+								int possible_address = atoi( str_label );
+
+								if( str_label[0] == '0' && size_str <= 2 && possible_address == 0){// la label ha indirizzo 0
+									s = new_symbol( str_label, 0 );
+								}
+								else if( /*str_label[0] != '0' &&*/ possible_address != 0 ){// la label è un indirizzo
+									s = new_symbol( str_label, possible_address );
+								}
+								else{ // la label è per una variabile (stringa)
+									s = new_symbol( str_label, address );
+								}
+								lh_symbol_table = enqueue( lh_symbol_table, s );
+							}
+							// converto il numero in stringa e aggiungo ogni singolo carattere (eccetto '\0') nella lista di output
+							// dopo @ : invece che scrivere il nome della variabile inserisce l'indirizzo assegnato
+							char *str_address = int_to_str( s->value );//La lista d'output usa caratteri: dopo devo convertirli in carattere
+							list_handler *lh_address = str_to_list( str_address );
+							// collego L'ultimo elemento registrato nell'output ( ovvero '@' ) con il primo dell'indirizzo registrato
+							setupNodesHandler( lh_address->head, lh_output);
+							lh_output->tail = insert( lh_output->tail, lh_address->head, 1 );
+							lh_output->tail = last( lh_output->tail );
+							// libero la memoria inutilizzata
+							free( lh_address );
+							lh_address = NULL;
+						}
+						
+						if( !b_ignore_line ){// non sto ignorando la memorizzazione, quindi tengo traccia della prossima istruzione
+							row += 1;
+						}
+						b_ignore_line = false; // quando sono a capo, non ho puù l'effetto del commento
+						node_start_of_line = node->next;// tengo traccia del primo dono della riga
+					}
 				}
-			}
+			// }
+			node = node->next;
 		}
-		node = node->next;
 	}
 }
 
@@ -192,7 +202,7 @@ list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
 	for( int i = 0; i < 16; i+= 1){
 		str_RN = (char*)malloc(sizeof(char) * size_str_RN);
 		strncpy( str_RN, "R", 2 );
-		int_toString( i, str_N, size_str_RN-1 ); // converte il valore di i da numero ad una stringa, e la inserisce in str_N
+		int_to_strbuffer( i, str_N, size_str_RN-1 ); // converte il valore di i da numero ad una stringa, e la inserisce in str_N
 		strncat( str_RN, str_N, size_str_RN-1);// Ri
 		lh_symbol_table = enqueue( lh_symbol_table, new_symbol( str_RN, i ) );
 	}
