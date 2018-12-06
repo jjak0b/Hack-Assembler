@@ -1,9 +1,8 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> // #include <cstdlib>
 #include "utility.h"
 #include "list.h"
 #include <string.h>
-#include <cstdlib>
 
 #define FILE_INPUT_EXTENSION ".asm" // estensione personalizzabile
 #ifndef FILE_INPUT_EXTENSION
@@ -85,6 +84,7 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 	list_node *node_start_of_line = NULL;// dopo ogni fine righa tiene traccia dell primo nodo nella riga corrente
 	list_node *node = lh_input->head; // tiene traccia del nodo (con carattere) puntato corrente
 	char *value = NULL; // puntatore del carattere puntato da node
+	char *next_value = NULL;// puntatore del carattere successivo puntato da node
 	int address = 16; // indirizzo da cui partire (incluso ) per assegnare le variabili
 	int row = 0; // riga attuale della rom ( senza commenti o label )
 	bool b_store_label = false; // quando = true i caratteri venngono memorizzati in lh_labelBuffer
@@ -96,12 +96,19 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 		// il secondo ciclo si occuperà di sostituire le variabili e le label
 		while( node != NULL ){
 			value = (char*)node->value;
+			if( node->next != NULL ){
+				next_value = (char*)node->next->value;
+			}
+			else{
+				next_value = NULL;
+			}
 
 			// if( !b_all_labels_read ){
 				if( *value != ' ' && *value != '\t' && *value != '\r'){ // ignoro questi caratteri durante filtro dei caratteri
 					// ignora i commenti
 					if( *value == '/'  ){
-						if( node->next != NULL && ( node->next->value ) == '/' ){
+						
+						if( next_value != NULL && *next_value == '/' ){
 							b_ignore_line = true;
 							node = node->next;
 						}
@@ -167,8 +174,8 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 							}
 							// converto il numero in stringa e aggiungo ogni singolo carattere (eccetto '\0') nella lista di output
 							// dopo @ : invece che scrivere il nome della variabile inserisce l'indirizzo assegnato
-							char *str_address = int_to_str( s->value );//La lista d'output usa caratteri: dopo devo convertirli in carattere
-							list_handler *lh_address = str_to_list( str_address );
+							char *str_address = int_to_string( s->value );//La lista d'output usa caratteri: dopo devo convertirli in carattere
+							list_handler *lh_address = string_to_list( str_address );
 							// collego L'ultimo elemento registrato nell'output ( ovvero '@' ) con il primo dell'indirizzo registrato
 							setupNodesHandler( lh_address->head, lh_output);
 							lh_output->tail = insert( lh_output->tail, lh_address->head, 1 );
@@ -297,4 +304,3 @@ int main( int nArgs, char **args ){
 
 	return 0;
 }
-

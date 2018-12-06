@@ -100,10 +100,10 @@ void *replaceFilenameExtension( char filename[], int size_filename, const char e
 
 bool isNumber( char *str ){
 	if( str == NULL ){
-		return NULL;
+		return false;
 	}
 	else if( str[0] == '\0'){
-		return true;
+		return false;
 	}
 	else{
 		if( str[0] > '0' && str[0] <= '9'){
@@ -158,20 +158,43 @@ bool int_to_strbuffer( int value, char *destination, int destination_size ){
 	}
 }
 
-char *int_to_string( int n ){
-
+int countDigits( int n ){
+	if( n == 0 ){
+		return 1;
+	}
+	else{
+		int c = 0;
+		while(n != 0 ){
+			n = n / 10;
+			c += 1;
+		}
+		return c;
+	}
 }
 
+char *int_to_string( int n ){
+	int n_digit = countDigits( n );
+	char *str = (char*)malloc( sizeof(char) * ( n_digit + 1 ) );
+	int_to_strbuffer( n, str, n_digit + 1 );
+	return str;
+}
+
+
+// PreCondition: list_node *head deve contenere nodi aventi dei char come valori puntati 
+//				 size_str deve essere = NULL se non si vuole ottenere la dimensione
+// PostCondition: Ritorna il puntatore alla stringa creata con i valori della lista passata
+//				  inoltre se in size_str viene passato un indirizzo, viene assegnato il valore della dimensione all'indirizzo puntato
 char *list_to_String( list_node *head, int *size_str ){
 	int size_s = size(head, true );
 	if( size_str != NULL ){
 		*size_str = size_s;
 	}
-
+	char *c = NULL;
 	char *buffer = (char*)malloc( sizeof(char)*( size_s +1));
 	// sicuramente non ho head = NULL nei primi size_str elementi
 	for( int i = 0; i < size_s ; i+= 1){
-		buffer[ i ] = head->value;
+		c = (char*)head->value;
+		buffer[ i ] = *c;
 		head = head->next;
 	}
 	buffer[size_s ] = '\0';
@@ -186,7 +209,7 @@ char *list_to_String( list_node *head, int *size_str ){
  * @param str 
  * @return list_handler* 
  */
-list_handler *str_to_list( char *str ){
+list_handler *string_to_list( char *str ){
 	if( str == NULL ){
 		return NULL;
 	}
