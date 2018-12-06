@@ -74,4 +74,5 @@ bool writeFile( char *filename, list_handler *l_handler );
  */
 bool int_toString( int value, char *destination, int destination_size );
 
+bool isNumber( char *str );
 #endif

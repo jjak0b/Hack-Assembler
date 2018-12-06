@@ -138,3 +138,24 @@ bool int_toString( int value, char *destination, int destination_size ){
 		return state;
 	}
 }
+
+char *int_to_str( int n ){
+	// da implementare
+}
+
+bool isNumber( char *str ){
+	if( str == NULL ){
+		return NULL;
+	}
+	else if( str[0] == '\0'){
+		return true;
+	}
+	else{
+		if( str[0] > '0' && str[0] <= '9'){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+}

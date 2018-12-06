@@ -1,6 +1,7 @@
 #include "list.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "utility.h"
 
 /*
@@ -298,4 +299,66 @@ list_node *dequeue( list_handler *handler ){
 	else{
 		return NULL;
 	}
+}
+
+bool isEqual( list_node *head1, list_node *head2 ){
+	char *val1 = (char*)head1->value;
+	char *val2 = (char*)head2->value;
+	if( ( head1 == NULL && head2 != NULL ) || ( head2 == NULL && head1 != NULL ) ){
+		return false;
+	}
+	else if( *val1 == *val2 ){
+		return true && isEqual( head1->next, head2->next );
+	}
+	else{
+		return false;
+	}
+}
+
+char *toString( list_node *head, int *size_str ){
+	int size_s = size(head, true );
+	if( size_str != NULL ){
+		*size_str = size_s;
+	}
+
+	char *buffer = (char*)malloc( sizeof(char)*( size_s +1));
+	// sicuramente non ho head = NULL nei primi size_str elementi
+	for( int i = 0; i < size_s ; i+= 1){
+		buffer[ i ] = head->value;
+		head = head->next;
+	}
+	buffer[size_s ] = '\0';
+	return buffer;
+}
+
+list_node *str_to_list( char *str ){
+	if( str == NULL ){
+		return NULL;
+	}
+	else{
+		int n = strlen( str );
+	}
+}
+
+list_handler *int_to_list( int n ){
+	list_handler *handler =  NULL;
+	if( n == 0 ){
+		list_node *head = list_node_new( &n, true, handler );
+		handler = head->handler;
+	}
+	else{
+		int *n_tmp = (int*)malloc( sizeof( int ) );
+		*n_tmp = n % 10;
+		n = n / 10;
+		list_node *head = list_node_new( n_tmp, true, NULL );
+		handler = head->handler;
+		while( n != 0 ){
+			n_tmp = (int*)malloc( sizeof( int ) );
+			*n_tmp = n % 10;
+			list_node *head_new = list_node_new( n_tmp, false, handler );
+			head = insert( handler->head, head_new, 0 );
+			n = n / 10;		
+		}
+	}
+	return handler;
 }

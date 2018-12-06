@@ -118,4 +118,16 @@ list_handler *enqueue( list_handler *handler, void *value);
 
 list_node *dequeue( list_handler *handler );
 
+bool isEqual( list_node *head1, list_node *head2 );
+
+// PreCondition: list_handler deve contenere nodi aventi dei char come valori puntati 
+//				 size_str deve essere = NULL se non si vuole ottenere la dimensione
+// PostCondition: Ritorna il puntatore alla stringa creata con i valori della lista passata
+//				  inoltre se in size_str viene passato un indirizzo, viene assegnato il valore della dimensione all'indirizzo puntato
+char *toString( list_node *head, int *size_str );
+
+list_node *str_to_list( char *str );
+
+list_handler *int_to_list( int n );
+
 #endif
