@@ -38,6 +38,15 @@ typedef struct list_node {
 int size( list_node *head, bool b_reachLast);
 
 /**
+ * @brief Data una lista ritorna il primo elemento della lista 
+ * se la lista è vuota ritorna NULL
+ * 
+ * @param node 
+ * @return list_node*  Il puntatore al primo nodo della lista
+ */
+list_node *first( list_node *node );
+
+/**
  * @brief Datp una lista ritorna l'ultimo elemento della lista 
  * se la lista è vuota ritorna NULL
  * 
@@ -82,6 +91,14 @@ int insert( list_handler *handler, char value, int index )
 */
 
 /**
+ * @brief Imposta l'handler per tutti i nodi della lista ( precedenti e successivi)
+ * PreCondition: handler != NULL
+ * @param node 
+ * @param handler 
+ */
+void *setupNodesHandler( list_node *node, list_handler *handler);
+
+/**
  * @brief 
  * 	PreCondition:
 		si suppone che b_create_handler sia = 1 solo se si vuole creare una nuova lista completa ( e non un singolo nodo )
@@ -124,7 +141,7 @@ bool isEqual( list_node *head1, list_node *head2 );
 //				 size_str deve essere = NULL se non si vuole ottenere la dimensione
 // PostCondition: Ritorna il puntatore alla stringa creata con i valori della lista passata
 //				  inoltre se in size_str viene passato un indirizzo, viene assegnato il valore della dimensione all'indirizzo puntato
-char *toString( list_node *head, int *size_str );
+char *list_to_String( list_node *head, int *size_str );
 
 list_node *str_to_list( char *str );
 

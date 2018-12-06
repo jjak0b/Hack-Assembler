@@ -14,14 +14,15 @@ typedef unsigned short int bool;
 
 #include "list.h"
 
+
 /**
  * @brief 
- * PreCondition: str e str_suffix devono essere già stringhe definite con "\0"
- * PostCondition: ritorna 1 se  la stringa str termina con str_suffix
- * 	es: strEndWith("la mia stringa", "stringa") -> 1
+ * PreCondition: str e str_suffix devono essere già _strbufferhe definite con "\0"
+ * PostCondition: ritorna 1 se  la _strbuffera str termina con str_suffix
+ * 	es: strEndWith("la mia _strbuffera", "_strbuffera") -> 1
  * @param str 
  * @param str_suffix 
- * @return 1 (true) se la stringa str termina con str_suffix 
+ * @return 1 (true) se la _strbuffera str termina con str_suffix 
  * @return 0 (false) altrimenti
  */
 bool strEndWith( char *str, char *str_suffix);
@@ -31,7 +32,7 @@ bool strEndWith( char *str, char *str_suffix);
  * 
  * @param filename 
  * @param size dimensione array di str_filename
- * @param extension stringa che definisce il nome della nuova estensione ( incluso il punto )
+ * @param extension _strbuffera che definisce il nome della nuova estensione ( incluso il punto )
  * @return int 
  */
 void *replaceFilenameExtension( char *filename, int size_filename, const char *extension );
@@ -39,7 +40,7 @@ void *replaceFilenameExtension( char *filename, int size_filename, const char *e
 /**
  * @brief
  * PreCondition: 	N/A
- * PostCondition: dato il nome di un file.estensione come stringa e un list_handler,
+ * PostCondition: dato il nome di un file.estensione come _strbuffera e un list_handler,
  * inserisce nella coda i caratteri letti dal file specificato
  * @param *filename 
  * @param *list_handler
@@ -50,7 +51,7 @@ list_handler *readFile( char *filename, list_handler *l_handler );
 /**
  * @brief 
  * PreCondition: I 'value' puntati dai 'list_node' della lista gestita da 'list_handler', devono essere convertibili a char
- * PostCondition: Dato il nome di un file.estensione come stringa e un list_handler,
+ * PostCondition: Dato il nome di un file.estensione come _strbuffera e un list_handler,
  * scrive gli elementi della lista in un file con il nome indicato ( se non esite, viene creato )
  * @param filename 
  * @param l_handler 
@@ -58,12 +59,16 @@ list_handler *readFile( char *filename, list_handler *l_handler );
  */
 bool writeFile( char *filename, list_handler *l_handler );
 
+bool isNumber( char *str );
+
+/*To string*/
+
 /**
  * @brief 
  * PreCondition: 	destination_size >= 2
  * 				 	se numero di caratteri di value > destination_size allora verranno inserite solo le prime 'destination_size-1' cifre meno significative nel buffer
  * 					poichè verrà inserito il carattere '\0' alla posizione destination_size-1
- *						es int_toString( 1234, destination, 4 ) -> destination = "234".
+ *						es int_to_strbuffer( 1234, destination, 4 ) -> destination = "234".
  * PostCondition: 	Inserisce nell buffer destination le cifre del valore passato come caratteri
  * @param value 
  * @param destination 
@@ -72,7 +77,22 @@ bool writeFile( char *filename, list_handler *l_handler );
  * @return false se numero di caratteri di value > destination_size 
  * 					
  */
-bool int_toString( int value, char *destination, int destination_size );
+bool int_to_strbuffer( int value, char *destination, int destination_size );
 
-bool isNumber( char *str );
+char *int_to_string( int n );
+
+char *list_to_String( list_node *head, int *size_str );
+
+/*To list*/
+
+/**
+ * @brief crea una lista con (una copia de)gli elementi della stringa (eccetto '\0')
+ * 	PreCondition: str deve essere una stringa con '\0' già inserito
+ * @param str 
+ * @return list_handler* 
+ */
+list_handler *str_to_list( char *str ){
+
+list_handler *int_to_list( int n );
+
 #endif

@@ -44,7 +44,26 @@ int size( list_node *head, bool b_reachLast){
 }
 
 /**
- * @brief Datp una lista ritorna l'ultimo elemento della lista 
+ * @brief Data una lista ritorna il primo elemento della lista 
+ * se la lista è vuota ritorna NULL
+ * 
+ * @param node 
+ * @return list_node*  Il puntatore al primo nodo della lista
+ */
+list_node *first( list_node *node ){
+	if( node == NULL ){
+		return NULL;
+	}
+	else if( node->prev == NULL ){
+		return node;
+	}
+	else{
+		return first( node->prev);
+	}
+}
+
+/**
+ * @brief Data una lista ritorna l'ultimo elemento della lista 
  * se la lista è vuota ritorna NULL
  * 
  * @param head 
@@ -137,18 +156,21 @@ list_node *insert( list_node *head, list_node *node, int index ){
 	else if( index == 0){
 		if( head != NULL ){
 			if( head->prev != NULL){ // casistica normale
+				node->handler = head->handler;// sovrascrivo l'handler
 				head->prev->next = node;
 				list_node *node_last = last( node );
 				node_last->next = head;
 				head->prev = node_last;
 			}
 			else{ // caso insert( l, i-s-t, size(l) )
+				node->handler = head->handler;
 				head->next = node;
 			}
 		}
 		else{ // caso insert( NULL, l-i-s-t, *any )
 			head = node;
 		}
+		return head;
 	}
 	else{
 		if( index > 0 ){
@@ -182,6 +204,20 @@ int insert( list_handler *handler, char value, int index ){
 	}
 }
 */
+
+/**
+ * @brief Imposta l'handler per tutti i nodi della lista ( precedenti e successivi) senza aggiornare alcun valore dell handler passato
+ * PreCondition: handler != NULL
+ * @param node 
+ * @param handler 
+ */
+void *setupNodesHandler( list_node *node, list_handler *handler ){
+	list_node *node_tmp = first( node );
+	while( node_tmp != NULL  ){
+		node_tmp->handler = handler;
+		node_tmp = node_tmp->next;
+	}
+}
 
 /**
  * @brief 
@@ -313,52 +349,4 @@ bool isEqual( list_node *head1, list_node *head2 ){
 	else{
 		return false;
 	}
-}
-
-char *toString( list_node *head, int *size_str ){
-	int size_s = size(head, true );
-	if( size_str != NULL ){
-		*size_str = size_s;
-	}
-
-	char *buffer = (char*)malloc( sizeof(char)*( size_s +1));
-	// sicuramente non ho head = NULL nei primi size_str elementi
-	for( int i = 0; i < size_s ; i+= 1){
-		buffer[ i ] = head->value;
-		head = head->next;
-	}
-	buffer[size_s ] = '\0';
-	return buffer;
-}
-
-list_node *str_to_list( char *str ){
-	if( str == NULL ){
-		return NULL;
-	}
-	else{
-		int n = strlen( str );
-	}
-}
-
-list_handler *int_to_list( int n ){
-	list_handler *handler =  NULL;
-	if( n == 0 ){
-		list_node *head = list_node_new( &n, true, handler );
-		handler = head->handler;
-	}
-	else{
-		int *n_tmp = (int*)malloc( sizeof( int ) );
-		*n_tmp = n % 10;
-		n = n / 10;
-		list_node *head = list_node_new( n_tmp, true, NULL );
-		handler = head->handler;
-		while( n != 0 ){
-			n_tmp = (int*)malloc( sizeof( int ) );
-			*n_tmp = n % 10;
-			list_node *head_new = list_node_new( n_tmp, false, handler );
-			head = insert( handler->head, head_new, 0 );
-			n = n / 10;		
-		}
-	}
-	return handler;
 }
