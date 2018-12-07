@@ -57,6 +57,9 @@ symbol *getFromSymbolTable( list_handler *lh_symbol_table, char *str_label ){
 		if( !strcmp( s->key, str_label ) ){
 			s_replace = s;
 			b_found_known = true;
+			#ifdef DEBUG
+			printf("Trovato simbolo %s in lista: %d", s->key, s->value);
+			#endif
 		}
 		node_symbol_table = node_symbol_table->next;
 	}
@@ -78,6 +81,9 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 		Vengono inseriti tutti i caratteri delle C ed A istruction da lh_input;
 	 	Vengono sostituite le label e le variabili dopo '@' con gli indirizzi numerici trovati nella symbol table
 	*/
+	#ifdef DEBUG
+	printf("->replace_symbols()\n");
+	#endif
 	list_handler *lh_output = NULL;
 	list_handler *lh_labelBuffer = NULL; // buffer per memorizzare i caratteri delle label uno alla volta
 	list_handler *lh_current_word = NULL;// non usato
@@ -90,10 +96,19 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 	bool b_store_label = false; // quando = true i caratteri venngono memorizzati in lh_labelBuffer
 	bool b_ignore_line = false;// quando true i caratteri vengono ignorati finche il flag non cambia stato ( a fine riga)
 	bool b_all_labels_read = false;
+	bool b_skip_char = false;// indica se saltare il carattere corrente durante la memorizzazione
 
 	for( int i = 0; i < 2; i+=1){
-		// il primo ciclo si occuperà di leggere le label e rimoverle nel codice come anche i commenti,
-		// il secondo ciclo si occuperà di sostituire le variabili e le label
+		#ifdef DEBUG
+		if( i == 0){
+			printf("!!!!!!!!!!! LETTURA LABELS !!!!!!!!\n");
+		}
+		else{
+			printf("!!!!!!!!!!! SOSTITUZIONE LABELS !!!!!!!!\n");
+		}
+		#endif
+		// il primo ciclo si occuperà di leggere le definizione delle label e rimoverle nel codice come anche i commenti,
+		// il secondo ciclo si occuperà di sostituire le label( o varaibili) nelle A instructiomn (@)
 		while( node != NULL ){
 			value = (char*)node->value;
 			if( node->next != NULL ){
@@ -103,14 +118,17 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 				next_value = NULL;
 			}
 
-			// if( !b_all_labels_read ){
-				if( *value != ' ' && *value != '\t' && *value != '\r'){ // ignoro questi caratteri durante filtro dei caratteri
+			if( *value != ' ' && *value != '\t' && *value != '\r'){ // ignoro questi caratteri durante filtro dei caratteri
+				if( !b_all_labels_read ){	
 					// ignora i commenti
 					if( *value == '/'  ){
 						
 						if( next_value != NULL && *next_value == '/' ){
 							b_ignore_line = true;
 							node = node->next;
+							#ifdef DEBUG
+							printf(" #Ignorando:%c", *value );
+							#endif
 						}
 						else{
 							printf( "Errore: sintassi errata (%s) a riga %d\n","Commento non valido", "", row );
@@ -120,6 +138,7 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 					if( !b_ignore_line){
 						if( *value == '('){
 							b_store_label = true; // inizio a memorizzare la label
+							b_skip_char = true; // salto la memorizzazione di ')'
 						}
 						else if( *value == ')'){ // uso ')' come delimitatore di fine label
 							/* 
@@ -133,24 +152,17 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 								char *str_label = list_to_String( lh_labelBuffer->head, NULL );
 								symbol *s = getFromSymbolTable( lh_symbol_table, str_label );
 								if( s == NULL){ // aggiungo il nuovo simbolo alla lista con indirizzo prossima istruzione
+									printf("NUOVO SIMBOLO :(%s) -> %d", s->key, s->value );
 									lh_symbol_table = enqueue( lh_symbol_table, new_symbol( str_label, row + 1 ) );
 								}
-								b_store_label = false;
-								node_start_of_line->next = node->next;
+								b_store_label = false; // smetto di memorizzare la label 
+								b_ignore_line = true; // posso ignorare il resto della riga
+								// node_start_of_line->next = node->next;
 							}
 						}
-						else if( b_store_label ){
-							lh_labelBuffer = enqueue( lh_labelBuffer, value);
-						}
-						else if( *value == '@' ){// inizio a memporizzare nel buffer i caratteri seguenti dal prossimo carattere
-							b_store_label = true;
-						}
-									
-						if( !b_store_label ){ // non voglio inseire i caratteri delle label che voglio sostituire
-							lh_output = enqueue( lh_output, value );
-						}
 					}
-
+				}
+				else{ // sostituisco le label dopo @ in base a quelle memorizzate in symbol_table
 					if( *value == '\n' ){
 						if( b_store_label ){ // stavo memorizzando una label
 							// non sto più memorizzando
@@ -164,14 +176,19 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 								if( str_label[0] == '0' && size_str <= 2 && possible_address == 0){// la label ha indirizzo 0
 									s = new_symbol( str_label, 0 );
 								}
-								else if( /*str_label[0] != '0' &&*/ possible_address != 0 ){// la label è un indirizzo
+								else if( /*str_label[0] != '0' &&*/ possible_address != 0 ){// la label è un indirizzo preimpostato
 									s = new_symbol( str_label, possible_address );
 								}
-								else{ // la label è per una variabile (stringa)
+								else{ // la label non è un numero: è una stringa (stringa)
 									s = new_symbol( str_label, address );
 								}
+								#ifdef DEBUG
+								printf("Nuova etichetta trovata:\nKey: %s\tValue: %d\n", s->key, s->value );
+								#endif
 								lh_symbol_table = enqueue( lh_symbol_table, s );
 							}
+							// else-> s != NULL -> un simbolo è già stato definito: sarà una label già registrata
+
 							// converto il numero in stringa e aggiungo ogni singolo carattere (eccetto '\0') nella lista di output
 							// dopo @ : invece che scrivere il nome della variabile inserisce l'indirizzo assegnato
 							char *str_address = int_to_string( s->value );//La lista d'output usa caratteri: dopo devo convertirli in carattere
@@ -184,18 +201,54 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 							free( lh_address );
 							lh_address = NULL;
 						}
-						
+					}
+					else if( *value == '@'){
+						b_store_label = true;
+					}
+				}
+				printf("%c", *value );
+				if( !b_ignore_line ){
+					if( !b_skip_char ){
+						if( b_store_label ){// memorizzo il carattere
+							lh_labelBuffer = enqueue( lh_labelBuffer, value);
+						}
+						else{ // non voglio inseire i caratteri delle label che voglio sostituire
+							lh_output = enqueue( lh_output, value );
+						}
+					}
+					
+					if( *value == '\n' ){
 						if( !b_ignore_line ){// non sto ignorando la memorizzazione, quindi tengo traccia della prossima istruzione
 							row += 1;
 						}
-						b_ignore_line = false; // quando sono a capo, non ho puù l'effetto del commento
-						node_start_of_line = node->next;// tengo traccia del primo dono della riga
+						b_ignore_line = false; // quando sono a capo, non ho più l'effetto del commento
+						node_start_of_line = node->next;// tengo traccia del primo nodo della riga
 					}
+					b_skip_char = false;
 				}
-			// }
+			}
 			node = node->next;
 		}
+		lh_input = lh_output;
+		lh_output = NULL;
+		node = lh_input->head; // ricomincio con il risultato della prima elaborazione
+		b_all_labels_read = true; // ora devo sostituire non pià leggere ( o ignorare )
+		// resetto i valori iniziali
+		b_ignore_line = false;
+		b_skip_char = false;
+		b_store_label = false;
+		node_start_of_line = node;
+
+		#ifdef DEBUG
+		printf("------Simboli in memoria:------\n");
+		print_symbols( lh_symbol_table->head );
+		printf("-------------------------------\n");
+		list_node_print( "%c", lh_input->head);
+		printf("\n-------------------------------\n");
+		#endif
 	}
+
+	return lh_output; 
 }
 
 list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
@@ -226,10 +279,11 @@ list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
 
 list_handler *assembler( list_handler *lh_input ){	
 	list_handler *lh_symbol_table = NULL;
+	list_handler *lh_output = NULL;
 	lh_symbol_table = init_default_symbol_table( lh_symbol_table );
 	print_symbols( lh_symbol_table->head );
-	list_handler *lh_output = lh_input;// tmp
 	lh_input = replace_symbols( lh_input, lh_symbol_table );
+	lh_output = lh_input;// tmp
 	/*
 	list_handler *lh_output = NULL;
 	list_node *node_current = lh_input->head;
