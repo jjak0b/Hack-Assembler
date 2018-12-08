@@ -27,7 +27,7 @@
  * PreCondition: N/A
  * PostCondition: Dato un nodo, ritorna la sua lunghezza della lista a seguire (o precedere) da tale nodo
  * se b_reachLast != 0 conta fino all'ultimo elemento della lista ritornado lunghezza positiva
- * altrimenti conta fino al primo elemento ritornando lunghezza negativa
+ * altrimenti conta fino al primo elemento ritornando lunghezza positiva
  * @param head 
  * @return La lunghezza della lista
  */
@@ -39,7 +39,7 @@ int size( list_node *head, bool b_reachLast){
 		return 1 + size( head->next, b_reachLast);
 	}
 	else{
-		return -1 + size( head->prev, b_reachLast );
+		return 1 + size( head->prev, b_reachLast );
 	}
 }
 
@@ -138,10 +138,9 @@ list_node *get_from_handler( list_handler *handler, int index){
 
 /**
  * @brief 
- * PreCondition: N/A
+ * PreCondition: index >= 0
  * PostCondition: Dati due nodi di lista e un indice, ritorna la prima lista con inserita la seconda a partire dalla posizione 'index-esima'
  * e collega l'ultimo elemento della seconda lista con la parte restante della prima, ovvero dalla posizione 'index'+1 della prima lista.
- * (Funziona anche con index negativo)
  * es: insert( c-i-a-o, c-i-a-o, 2 ) ->c-i-c-i-a-o-a-o
  * 
  * @param head 
@@ -150,35 +149,32 @@ list_node *get_from_handler( list_handler *handler, int index){
  * @return list_node* nodo alla posizione index dopo inserimento
  */
 list_node *insert( list_node *head, list_node *node, int index ){
-	if( head == NULL  ){
+	if( node == NULL ){
+		return head;
+	}
+	else if( head == NULL  ){
 		return NULL;
 	}
 	else if( index == 0){
 		if( head != NULL ){
-			if( head->prev != NULL){ // casistica normale
-				node->handler = head->handler;// sovrascrivo l'handler
-				head->prev->next = node;
-				list_node *node_last = last( node );
-				node_last->next = head;
-				head->prev = node_last;
-			}
-			else{ // caso insert( l, i-s-t, size(l) )
-				node->handler = head->handler;
-				head->next = node;
-			}
+			list_node *node_last = last( node );
+			head->prev = node_last;
+			node_last->next = head;
+			return node;
 		}
-		else{ // caso insert( NULL, l-i-s-t, *any )
+		else{
 			head = node;
 		}
-		return head;
+		return node;
 	}
 	else{
 		if( index > 0 ){
-			return insert( head->next, node, index-1);
+			head->next = insert( head->next, node, index-1);
+			if( head->next != NULL ){
+				head->next->prev = head;
+			}
 		}
-		else{
-			return insert( head->prev, node, index+1);
-		}
+		return head;
 	}
 }
 /*
@@ -212,10 +208,9 @@ int insert( list_handler *handler, char value, int index ){
  * @param handler 
  */
 void *setupNodesHandler( list_node *node, list_handler *handler ){
-	list_node *node_tmp = first( node );
-	while( node_tmp != NULL  ){
-		node_tmp->handler = handler;
-		node_tmp = node_tmp->next;
+	while( node != NULL  ){
+		node->handler = handler;
+		node = node->next;
 	}
 }
 
@@ -246,6 +241,7 @@ list_node *list_node_new( void *value, const bool b_create_handler, list_handler
 		handler = ( list_handler* ) malloc( sizeof( list_handler ) );
 		handler->head = head;
 		handler->tail = head;
+		handler->current = head;
 	}
 
 	head->handler = handler;
@@ -314,10 +310,13 @@ list_handler *enqueue( list_handler *handler, void *value ){
 		handler = new_tail->handler;
 	}
 	list_node *old_tail = handler->tail;
-	new_tail->prev = old_tail;
-	new_tail->next = NULL; // dovrebbe essere già a NULL dato che era in coda...
-	old_tail->next = new_tail;
-	handler->tail = new_tail;
+	if( old_tail != new_tail ){ // Caso in cui la lista sia stata non sia stata appena creata e che quindi non ci sia solo il primo elemento
+		new_tail->prev = old_tail;
+		new_tail->next = NULL; // dovrebbe essere già a NULL dato che era in coda...
+		old_tail->next = new_tail;
+		handler->tail = new_tail;
+	}
+
 	return handler;
 }
 
@@ -348,5 +347,23 @@ bool isEqual( list_node *head1, list_node *head2 ){
 	}
 	else{
 		return false;
+	}
+}
+
+void delete_list( list_handler *handler, bool b_delete_values ){
+	if( handler != NULL ){
+		list_node *node = handler->head;
+		list_node *next = NULL;
+		free( handler );
+		handler = NULL;
+		while( node != NULL ){
+			next = node->next;
+			if( b_delete_values ){
+				free( node->value );
+				node->value = NULL;
+			}
+			free( node );
+			node = next;
+		}
 	}
 }

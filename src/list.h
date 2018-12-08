@@ -31,7 +31,7 @@ typedef struct list_node {
  * PreCondition: N/A
  * PostCondition: Dato un nodo, ritorna la sua lunghezza della lista a seguire (o precedere) da tale nodo
  * se b_reachLast != 0 conta fino all'ultimo elemento della lista ritornado lunghezza positiva
- * altrimenti conta fino al primo elemento ritornando lunghezza negativa
+ * altrimenti conta fino al primo elemento ritornando lunghezza positiva
  * @param head 
  * @return La lunghezza della lista
  */
@@ -136,5 +136,7 @@ list_handler *enqueue( list_handler *handler, void *value);
 list_node *dequeue( list_handler *handler );
 
 bool isEqual( list_node *head1, list_node *head2 );
+
+void delete_list( list_handler *handler, bool b_delete_values );
 
 #endif

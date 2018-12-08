@@ -59,7 +59,15 @@ list_handler *readFile( char *filename, list_handler *l_handler );
  */
 bool writeFile( char *filename, list_handler *l_handler );
 
-bool isNumber( char *str );
+/**
+ * @brief indica se la stringa (o singolo carattere ) passata è un numero
+ * PreCondition: str deve essere una stringa con già inserito '\0'
+ * @param str 
+ * @param isStr Indica se il puntatore punta a una stringa, oppure a un carattere
+ * @return true se tutti i caratteri sono codificati in cifre da 0 a 9
+ * @return false altrimenti
+ */
+bool isNumber( char *str, bool isStr);
 
 /*To string*/
 
@@ -81,11 +89,18 @@ bool int_to_strbuffer( int value, char *destination, int destination_size );
 
 char *int_to_string( int n );
 
-// PreCondition: list_node *head deve contenere nodi aventi dei char come valori puntati 
-//				 size_str deve essere = NULL se non si vuole ottenere la dimensione
-// PostCondition: Ritorna il puntatore alla stringa creata con i valori della lista passata
-//				  inoltre se in size_str viene passato un indirizzo, viene assegnato il valore della dimensione all'indirizzo puntato
-char *list_to_String( list_node *head, int *size_str );
+
+/**
+ * @brief coverte una lista a una stringa
+ * PreCondition: list_node *head deve contenere nodi aventi dei char come valori puntati 
+ *				 size_str deve essere = NULL se non si vuole ottenere la dimensione
+ * PostCondition: Ritorna il puntatore alla stringa creata con i valori della lista passata
+ *				  inoltre se in size_str viene passato un indirizzo, viene assegnato il valore della dimensione all'indirizzo puntato
+ * @param head : il nodo da cui partire per ottere la stringa
+ * @param size_str : dimensione dell'array contente la stringa
+ * @return char* 
+ */
+char *list_to_string( list_node *head, int *size_str );
 
 /*To list*/
 

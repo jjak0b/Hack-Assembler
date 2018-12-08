@@ -97,8 +97,15 @@ void *replaceFilenameExtension( char filename[], int size_filename, const char e
 
 	strncat( filename, extension, strlen(extension) );
 }
-
-bool isNumber( char *str ){
+/**
+ * @brief indica se la stringa (o singolo carattere ) passata è un numero
+ * PreCondition: str deve essere una stringa con già inserito '\0'
+ * @param str 
+ * @param isStr Indica se il puntatore punta a una stringa se true, oppure a un carattere se false
+ * @return true se tutti i caratteri sono codificati in cifre da 0 a 9
+ * @return false altrimenti
+ */
+bool isNumber( char *str, bool isStr){
 	if( str == NULL ){
 		return false;
 	}
@@ -106,8 +113,13 @@ bool isNumber( char *str ){
 		return false;
 	}
 	else{
-		if( str[0] > '0' && str[0] <= '9'){
-			return true;
+		if( str[0] >= '0' && str[0] <= '9'){
+			if( isStr && str[1] != '\0'){
+				return true && isNumber( &str[1], isStr );
+			}
+			else{
+				return true;
+			}
 		}
 		else{
 			return false;
@@ -175,16 +187,27 @@ int countDigits( int n ){
 char *int_to_string( int n ){
 	int n_digit = countDigits( n );
 	char *str = (char*)malloc( sizeof(char) * ( n_digit + 1 ) );
-	int_to_strbuffer( n, str, n_digit + 1 );
+	
+	for( int i = n_digit-1; i >= 0; i -= 1 ){
+		str[i] = (char)((int)'0' + (n % 10));
+		n = n / 10;
+	}
+	str[ n_digit ] = '\0';
 	return str;
 }
 
 
-// PreCondition: list_node *head deve contenere nodi aventi dei char come valori puntati 
-//				 size_str deve essere = NULL se non si vuole ottenere la dimensione
-// PostCondition: Ritorna il puntatore alla stringa creata con i valori della lista passata
-//				  inoltre se in size_str viene passato un indirizzo, viene assegnato il valore della dimensione all'indirizzo puntato
-char *list_to_String( list_node *head, int *size_str ){
+/**
+ * @brief coverte una lista a una stringa
+ * PreCondition: list_node *head deve contenere nodi aventi dei char come valori puntati 
+ *				 size_str deve essere = NULL se non si vuole ottenere la dimensione
+ * PostCondition: Ritorna il puntatore alla stringa creata con i valori della lista passata
+ *				  inoltre se in size_str viene passato un indirizzo, viene assegnato il valore della dimensione all'indirizzo puntato
+ * @param head : il nodo da cui partire per ottere la stringa
+ * @param size_str : dimensione dell'array contente la stringa
+ * @return char* 
+ */
+char *list_to_string( list_node *head, int *size_str ){
 	int size_s = size(head, true );
 	if( size_str != NULL ){
 		*size_str = size_s;
@@ -219,9 +242,8 @@ list_handler *string_to_list( char *str ){
 			// inizializzo la testa
 			char *c = (char*)malloc(sizeof(char));
 			*c = str[0];
-			list_node *node = NULL, *head = list_node_new( c, true, NULL );
-			list_handler *handler = head->handler;
-			for(int i = 1; i < n; i+=1 ){
+			list_handler *handler = enqueue( NULL, c );
+			for(int i = 1; i < n; i += 1 ){
 				c = (char*)malloc(sizeof(char)); // istanzio un nuovo carattere e copio il valore da str per evitare problemi ( vedere sotto)
 				*c = str[i];
 				handler = enqueue( handler, c ); // se fosse handler = enqueue( handler, &str[i] ); probabilemnte mi causera dei pending pointers nelle liste che puntano alla lista se faccio un suo free dal chiamante
