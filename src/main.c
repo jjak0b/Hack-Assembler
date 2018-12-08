@@ -58,7 +58,7 @@ symbol *getFromSymbolTable( list_handler *lh_symbol_table, char *str_label ){
 			s_replace = s;
 			b_found_known = true;
 			#ifdef DEBUG
-			printf("Trovato simbolo %s in lista: %d", s->key, s->value);
+			printf("Trovato simbolo %s in lista: %d\n", s->key, s->value);
 			#endif
 		}
 		node_symbol_table = node_symbol_table->next;
@@ -98,17 +98,21 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 	bool b_all_labels_read = false;
 	bool b_skip_char = false;// indica se saltare il carattere corrente durante la memorizzazione
 
-	for( int i = 0; i < 2; i+=1){
+	for( int i = 0; i < 3; i+=1){
 		#ifdef DEBUG
 		if( i == 0){
+			printf("!!!!!!!!!!! RIMOZIONE COMMENTI !!!!!!!!\n");
+		}
+		if( i == 1){
 			printf("!!!!!!!!!!! LETTURA LABELS !!!!!!!!\n");
 		}
 		else{
 			printf("!!!!!!!!!!! SOSTITUZIONE LABELS !!!!!!!!\n");
 		}
 		#endif
-		// il primo ciclo si occuperà di leggere le definizione delle label e rimoverle nel codice come anche i commenti,
-		// il secondo ciclo si occuperà di sostituire le label( o varaibili) nelle A instructiomn (@)
+		// il primo ciclo si occuerà di rimuovere i i commenti
+		// il seocnod ciclo si occuperà di leggere le definizione delle label e rimoverle,
+		// il terzo ciclo si occuperà di sostituire le label( o varaibili) nelle A instructiomn (@)
 		while( node != NULL ){
 			value = (char*)node->value;
 			if( node->next != NULL ){
@@ -119,22 +123,24 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 			}
 
 			if( *value != ' ' && *value != '\t' && *value != '\r'){ // ignoro questi caratteri durante filtro dei caratteri
-				if( !b_all_labels_read ){	
-					// ignora i commenti
-					if( *value == '/'  ){
-						
-						if( next_value != NULL && *next_value == '/' ){
-							b_ignore_line = true;
-							node = node->next;
-							#ifdef DEBUG
-							printf(" #Ignorando:%c", *value );
-							#endif
-						}
-						else{
-							printf( "Errore: sintassi errata (%s) a riga %d\n","Commento non valido", "", row );
+				if( i == 0 ){ // PRIMO CICLO: ignora i commenti
+					if( !b_ignore_line){
+						if( *value == '/'  ){
+							if( next_value != NULL && *next_value == '/' ){
+								b_ignore_line = true;
+								node = node->next;
+								#ifdef DEBUG
+								printf(" #Ignorando:%c", *value );
+								#endif
+							}
+							else{
+								printf( "Errore: sintassi errata (%s) a riga %d\n","Commento non valido", "", row );
+								return NULL;
+							}
 						}
 					}
-					
+				}
+				else if( i == 1 ){	// SECONDO ciclo: LEGGI LABELS
 					if( !b_ignore_line){
 						if( *value == '('){
 							b_store_label = true; // inizio a memorizzare la label
@@ -149,105 +155,160 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 								sostituisco la label dell'input con la parte di stringa data con il valore corretto
 							*/
 							if( b_store_label ){
-								char *str_label = list_to_String( lh_labelBuffer->head, NULL );
+								char *str_label = list_to_string( lh_labelBuffer->head, NULL );
 								symbol *s = getFromSymbolTable( lh_symbol_table, str_label );
 								if( s == NULL){ // aggiungo il nuovo simbolo alla lista con indirizzo prossima istruzione
-									printf("NUOVO SIMBOLO :(%s) -> %d", s->key, s->value );
-									lh_symbol_table = enqueue( lh_symbol_table, new_symbol( str_label, row + 1 ) );
+									s = new_symbol( str_label, row );
+									lh_symbol_table = enqueue( lh_symbol_table, s );
+									printf("[NUOVO SIMBOLO :(%s) -> %d]", s->key, s->value );
 								}
 								b_store_label = false; // smetto di memorizzare la label 
 								b_ignore_line = true; // posso ignorare il resto della riga
+								b_skip_char = true; // il prossimo carattere sarà un '\n', ma ho già uno '\n' della riga precedence, di conseguenza avrei una linea vuota senza questo
+								delete_list( lh_labelBuffer, false );
+								lh_labelBuffer = NULL;
 								// node_start_of_line->next = node->next;
 							}
 						}
 					}
 				}
-				else{ // sostituisco le label dopo @ in base a quelle memorizzate in symbol_table
-					if( *value == '\n' ){
+				else{ // TERZO CICLO: sostituisco le label dopo @ in base a quelle memorizzate in symbol_table
+					if( *value == '@'){
+						b_store_label = true;
+						// lo inserisco manualmente
+						lh_output = enqueue( lh_output, value );
+						b_skip_char = true; // non registrare '@'
+					}
+					else if( *value == '\n' ){ // sostituisci la label con il giusto indirizzo quando arrivi a fine riga
 						if( b_store_label ){ // stavo memorizzando una label
-							// non sto più memorizzando
-							b_store_label = false;
+
 							int size_str = 0;
-							char *str_label = list_to_String( lh_labelBuffer->head, &size_str );// converte quello che ho memorizzato in stringa
+							char *str_label = list_to_string( lh_labelBuffer->head, &size_str );// converte quello che ho memorizzato in stringa
+							#ifdef DEBUG
+							printf("\nstringa memorizzata: %s\n", str_label );
+							#endif
 							symbol *s = getFromSymbolTable( lh_symbol_table, str_label );
+							bool isLabel = false;
 							if( s == NULL){ // aggiungo il nuovo simbolo alla lista con indirizzo per una variabile disponibile
 								int possible_address = atoi( str_label );
 
-								if( str_label[0] == '0' && size_str <= 2 && possible_address == 0){// la label ha indirizzo 0
+								if( size_str <= 2 && str_label[0] == '0' && possible_address == 0){// la label ha indirizzo 0
 									s = new_symbol( str_label, 0 );
 								}
 								else if( /*str_label[0] != '0' &&*/ possible_address != 0 ){// la label è un indirizzo preimpostato
 									s = new_symbol( str_label, possible_address );
 								}
 								else{ // la label non è un numero: è una stringa (stringa)
-									s = new_symbol( str_label, address );
+									if( isNumber( str_label, false ) ){// controllo il primo carattere ( per false )
+										printf("ERRORE: (riga: %d) La label non può iniziare con un numero e continuare come stringa\n", row );
+										return NULL;
+									}
+									else{
+										isLabel = true;
+										s = new_symbol( str_label, address );
+										address += 1;
+									}									
 								}
 								#ifdef DEBUG
-								printf("Nuova etichetta trovata:\nKey: %s\tValue: %d\n", s->key, s->value );
+								printf("Nuova etichetta GENERATA:\nKey: %s\tValue: %d\n", s->key, s->value );
 								#endif
-								lh_symbol_table = enqueue( lh_symbol_table, s );
+								if( isLabel ){
+									lh_symbol_table = enqueue( lh_symbol_table, s );
+								}
 							}
+							#ifdef DEBUG
+							else{
+								printf("Etichetta TROVATA:\nKey: %s\tValue: %d\n", s->key, s->value );
+							}
+							#endif
 							// else-> s != NULL -> un simbolo è già stato definito: sarà una label già registrata
 
 							// converto il numero in stringa e aggiungo ogni singolo carattere (eccetto '\0') nella lista di output
 							// dopo @ : invece che scrivere il nome della variabile inserisce l'indirizzo assegnato
 							char *str_address = int_to_string( s->value );//La lista d'output usa caratteri: dopo devo convertirli in carattere
 							list_handler *lh_address = string_to_list( str_address );
-							// collego L'ultimo elemento registrato nell'output ( ovvero '@' ) con il primo dell'indirizzo registrato
-							setupNodesHandler( lh_address->head, lh_output);
-							lh_output->tail = insert( lh_output->tail, lh_address->head, 1 );
-							lh_output->tail = last( lh_output->tail );
+							list_node *head_address = lh_address->head;
+							#ifdef DEBUG
+							// printf("Indirizzo [%d] = \"%s\"\n", s->value, str_address );
+							#endif
+
 							// libero la memoria inutilizzata
 							free( lh_address );
 							lh_address = NULL;
+
+							setupNodesHandler( head_address, lh_output);
+							
+							// collego L'ultimo elemento registrato nell'output ( ovvero '@' ) con il primo dell'indirizzo registrato
+							list_node *old_tail = lh_output->tail;
+							list_node *last_address = last( head_address );
+							head_address->prev = old_tail;
+							old_tail->next = head_address;
+							last_address->next = NULL;
+							lh_output->tail = last_address;
+
+							// list_node_print( "%c", lh_output->head );
+
+							// libero la memoria inutilizzata
+							delete_list( lh_labelBuffer, false );
+							lh_labelBuffer = NULL;
+
+							// non sto più memorizzando
+							b_store_label = false;
 						}
 					}
-					else if( *value == '@'){
-						b_store_label = true;
-					}
 				}
+
 				printf("%c", *value );
-				if( !b_ignore_line ){
+				if( !b_ignore_line || ( b_ignore_line && *value == '\n')  ){
 					if( !b_skip_char ){
 						if( b_store_label ){// memorizzo il carattere
 							lh_labelBuffer = enqueue( lh_labelBuffer, value);
 						}
-						else{ // non voglio inseire i caratteri delle label che voglio sostituire
+						else{ // non voglio inserire i caratteri delle label che voglio sostituire
 							lh_output = enqueue( lh_output, value );
 						}
 					}
-					
-					if( *value == '\n' ){
-						if( !b_ignore_line ){// non sto ignorando la memorizzazione, quindi tengo traccia della prossima istruzione
-							row += 1;
+					else{ // devo saltare il prosimo carattere
+						if(*value == '\n'){// sto saltando questo \n quindi non la conto come riga
+							row -= 1; // la decremento perchè verrà incrementata dopo
 						}
-						b_ignore_line = false; // quando sono a capo, non ho più l'effetto del commento
-						node_start_of_line = node->next;// tengo traccia del primo nodo della riga
+						b_skip_char = false;// non ignorare il prossimo
 					}
-					b_skip_char = false;
+				}
+
+				if( *value == '\n' ){
+					row += 1;// tengo traccia della prossima istruzione
+					b_ignore_line = false; // quando sono a capo, non ho più l'effetto del commento
+					node_start_of_line = node->next;// tengo traccia del primo nodo della riga
 				}
 			}
 			node = node->next;
 		}
-		lh_input = lh_output;
-		lh_output = NULL;
-		node = lh_input->head; // ricomincio con il risultato della prima elaborazione
-		b_all_labels_read = true; // ora devo sostituire non pià leggere ( o ignorare )
-		// resetto i valori iniziali
-		b_ignore_line = false;
-		b_skip_char = false;
-		b_store_label = false;
-		node_start_of_line = node;
 
 		#ifdef DEBUG
+		printf("Ciclo elaborazione %d concluso.\n", i+1 );
 		printf("------Simboli in memoria:------\n");
 		print_symbols( lh_symbol_table->head );
 		printf("-------------------------------\n");
-		list_node_print( "%c", lh_input->head);
-		printf("\n-------------------------------\n");
+		list_node_print( "%c", lh_output->head);
+		printf("-------------------------------\n");
 		#endif
+
+		if( i < 2){
+			lh_input = lh_output;
+			lh_output = NULL;
+			row = 0;
+			node = lh_input->head; // ricomincio con il risultato della prima elaborazione
+			b_all_labels_read = true; // ora devo sostituire non pià leggere ( o ignorare )
+			// resetto i valori iniziali
+			b_ignore_line = false;
+			b_skip_char = false;
+			b_store_label = false;
+			node_start_of_line = node;
+		}
 	}
 
+	// list_node_print( "%c", lh_output->head);
 	return lh_output; 
 }
 
@@ -282,8 +343,8 @@ list_handler *assembler( list_handler *lh_input ){
 	list_handler *lh_output = NULL;
 	lh_symbol_table = init_default_symbol_table( lh_symbol_table );
 	print_symbols( lh_symbol_table->head );
-	lh_input = replace_symbols( lh_input, lh_symbol_table );
-	lh_output = lh_input;// tmp
+	lh_output = replace_symbols( lh_input, lh_symbol_table );
+	// list_node_print( "%c", lh_output->head);
 	/*
 	list_handler *lh_output = NULL;
 	list_node *node_current = lh_input->head;
@@ -326,26 +387,31 @@ int main( int nArgs, char **args ){
 						printf("caratteri letti: %d\n", size(  lh_input->head, true ) );
 						list_node_print( "%c", lh_input->head );
 						#endif
-
+						
 						lh_output = assembler( lh_input ); // elabora il contenuto del file, restituendo il contenuto da scrivere su file
-
+						
 						#ifdef DEBUG
 						printf("caratteri elaborati: %d\n", size(  lh_output->head, true ) );
 						list_node_print( "%c", lh_output->head );
 						#endif
 
-						int length_estension = strlen( FILE_OUTPUT_EXTENSION );
-						int length_filename = strlen( filename );
-						int length_FilenameOut = length_filename + length_estension; // la dimensione non è proprio ottimizzata ma sicuramente non andrà outofbound
-						char *filename_out = ( char* ) malloc(sizeof(char) * ( length_FilenameOut + 1 ) );
-						strncpy( filename_out, filename, length_FilenameOut );
-						replaceFilenameExtension( filename_out, length_filename, FILE_OUTPUT_EXTENSION );
-						printf("Scrittura dell'elaborazione su file '%s' in corso...\n", filename_out);
-						if( writeFile( filename_out, lh_input) ){
-							printf("Scrittura sul file '%s' avvenuta con successo\n", filename_out );
+						if( lh_output != NULL ){
+							int length_estension = strlen( FILE_OUTPUT_EXTENSION );
+							int length_filename = strlen( filename );
+							int length_FilenameOut = length_filename + length_estension; // la dimensione non è proprio ottimizzata ma sicuramente non andrà outofbound
+							char *filename_out = ( char* ) malloc(sizeof(char) * ( length_FilenameOut + 1 ) );
+							strncpy( filename_out, filename, length_FilenameOut );
+							replaceFilenameExtension( filename_out, length_filename, FILE_OUTPUT_EXTENSION );
+							printf("Scrittura dell'elaborazione su file '%s' in corso...\n", filename_out);
+							if( writeFile( filename_out, lh_output) ){
+								printf("Scrittura sul file '%s' avvenuta con successo\n", filename_out );
+							}
+							else{
+								printf("ERRORE: Impossibile aprire o scrivere sul file '%s'\n", filename_out );
+							}
 						}
 						else{
-							printf("ERRORE: Impossibile aprire o scrivere sul file '%s'\n", filename_out );
+							printf("ERRORE: Impossbile completare l'operazione a causa di un errore durante l'elaborazione\n");
 						}
 					}
 				}
