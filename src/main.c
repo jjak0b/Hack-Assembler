@@ -67,6 +67,32 @@ symbol *getFromSymbolTable( list_handler *lh_symbol_table, char *str_label ){
 	return s_replace;
 }
 
+list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
+	lh_symbol_table = NULL;
+	symbol *s;
+	char reg[4];
+	char *str_RN;
+	char str_N[3];
+	// crea le etichette dedicate ai registri
+	const int size_str_RN = 4;
+	for( int i = 0; i < 16; i+= 1){
+		str_RN = (char*)malloc(sizeof(char) * size_str_RN);
+		strncpy( str_RN, "R", 2 );
+		int_to_strbuffer( i, str_N, size_str_RN-1 ); // converte il valore di i da numero ad una stringa, e la inserisce in str_N
+		strncat( str_RN, str_N, size_str_RN-1);// Ri
+		lh_symbol_table = enqueue( lh_symbol_table, new_symbol( str_RN, i ) );
+	}
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "SCREEN", 16384 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "KBD", 24576 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "SP", 0 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "LCL", 1 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "ARG", 2 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "THIS", 3 ) );
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "THAT", 4 ) );
+	
+	return lh_symbol_table;
+}
+
 /*
 Cosa deve fare:
 1)Rimuovere i commenti
@@ -312,30 +338,59 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 	return lh_output; 
 }
 
-list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
-	lh_symbol_table = NULL;
-	symbol *s;
-	char reg[4];
-	char *str_RN;
-	char str_N[3];
-	// crea le etichette dedicate ai registri
-	const int size_str_RN = 4;
-	for( int i = 0; i < 16; i+= 1){
-		str_RN = (char*)malloc(sizeof(char) * size_str_RN);
-		strncpy( str_RN, "R", 2 );
-		int_to_strbuffer( i, str_N, size_str_RN-1 ); // converte il valore di i da numero ad una stringa, e la inserisce in str_N
-		strncat( str_RN, str_N, size_str_RN-1);// Ri
-		lh_symbol_table = enqueue( lh_symbol_table, new_symbol( str_RN, i ) );
-	}
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "SCREEN", 16384 ) );
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "KBD", 24576 ) );
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "SP", 0 ) );
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "LCL", 1 ) );
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "ARG", 2 ) );
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "THIS", 3 ) );
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "THAT", 4 ) );
-	
-	return lh_symbol_table;
+list_handler *replace_instructions( list_handler *lh_input ){
+	list_handler *lh_output = NULL;
+	list_node *node = lh_input->head;
+	list_handler *lh_buffer = NULL;
+	char *value = NULL;
+	bool b_skip_char = false;
+	bool b_skip_line = false;
+	bool b_store_constant = false;
+	bool b_store_instruction = false;
+	while( node != NULL ){
+		value = node->value;
+		if( !b_store_constant && !b_store_instruction ){
+			if( *value == '@' ){
+				b_store_constant = true;
+			}
+			else{
+				b_store_instruction = true;
+			}
+		}
+
+		if( *value == '\n' ){
+			if( b_store_constant){
+				char *str_constant = list_to_string( lh_buffer->head, NULL );
+				int constant = atoi( str_constant );
+				free( str_constant );
+				list_handler *lh_constant = int_to_binary_list( constant, 16 );
+				char *str_binary = list_binary_to_string( lh_constant->head, 17 );
+				list_handler *lh_str_binary = string_to_list( str_binary );
+				free( str_binary );
+				list_node *head_tmp = lh_constant->head;
+				list_node *tail_new = last( head_tmp );
+				list_node *tail_old = lh_output->tail;
+				setupNodesHandler( lh_constant->head, lh_output );
+				// collegamento liste
+				head_tmp->prev = tail_old;
+				tail_old->next = head_tmp;
+				lh_output->tail = tail_new;
+				tail_new->next = NULL;
+				free( lh_constant );
+				b_store_constant = false;
+			}
+			else if( b_store_instruction ){
+
+				b_store_instruction = false;
+			}
+
+			char *new_ln = malloc(sizeof(char));
+			*new_ln = '\n';
+			lh_output = enqueue( lh_output, new_ln );
+			b_skip_line = false;
+		}
+		node = node->next;
+	}	
 }
 
 list_handler *assembler( list_handler *lh_input ){	
@@ -344,6 +399,7 @@ list_handler *assembler( list_handler *lh_input ){
 	lh_symbol_table = init_default_symbol_table( lh_symbol_table );
 	print_symbols( lh_symbol_table->head );
 	lh_output = replace_symbols( lh_input, lh_symbol_table );
+	lh_output = replace_instructions( lh_output );
 	// list_node_print( "%c", lh_output->head);
 	/*
 	list_handler *lh_output = NULL;
