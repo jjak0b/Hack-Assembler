@@ -224,6 +224,27 @@ char *list_to_string( list_node *head, int *size_str ){
 	return buffer;
 }
 
+char *list_binary_to_string( list_node *head, int *size_str ){
+	list_node *tmp = head;
+	int size_s = size(head, true ) + 1;
+	if( size_str != NULL ){
+		*size_str = size_s;
+	}
+	char *str = malloc( sizeof( char ) * ( size_s ) );
+	bool *bit = NULL;
+	for( int i = 0; i < size_s - 1; i += 1 ){
+		bit = (bool*)tmp->value;
+		if( !*bit ){
+			str[ i ] = '0';
+		}
+		else{
+			str[ i ] = '1';
+		}
+		tmp = tmp->next;
+	}
+	str[ size_s - 1 ] = '\0';
+	return str;
+}
 /*To list*/
 
 /**
@@ -276,4 +297,25 @@ list_handler *int_to_list( int n ){
 		}
 	}
 	return handler;
+}
+
+list_handler *int_to_binary_list( int n, int unsigned max_bit_count ){
+	list_handler *binary = NULL;
+	bool *bit = NULL;
+	int c = 0;
+	while( c < max_bit_count /*n!=0*/ ){
+		bit = malloc( sizeof( bool ) );
+		*bit = n % 2;
+		n = n / 2;
+		binary = enqueue( binary, bit );
+		c += 1;
+	}
+	/*
+	while( c < 16 ){// bit a 0 di padding
+		bit = malloc( sizeof( bool ) );
+		*bit = false;
+		binary = enqueue( binary, bit );
+	}*/
+	binary = list_node_reverse( binary->head );
+	return binary;
 }

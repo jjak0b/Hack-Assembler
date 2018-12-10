@@ -102,6 +102,8 @@ char *int_to_string( int n );
  */
 char *list_to_string( list_node *head, int *size_str );
 
+char *list_binary_to_string( list_node *head, int *size_str );
+
 /*To list*/
 
 /**
@@ -113,5 +115,8 @@ char *list_to_string( list_node *head, int *size_str );
 list_handler *string_to_list( char *str );
 
 list_handler *int_to_list( int n );
+
+list_handler *int_to_binary_list( int n, int unsigned max_bit_count );
+
 
 #endif
