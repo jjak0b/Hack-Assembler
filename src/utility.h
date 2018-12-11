@@ -118,5 +118,6 @@ list_handler *int_to_list( int n );
 
 list_handler *int_to_binary_list( int n, int unsigned max_bit_count );
 
+bool isSubstr(const char *str, const char *subStr, int *start_index);
 
 #endif

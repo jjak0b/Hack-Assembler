@@ -316,6 +316,37 @@ list_handler *int_to_binary_list( int n, int unsigned max_bit_count ){
 		*bit = false;
 		binary = enqueue( binary, bit );
 	}*/
-	binary = list_node_reverse( binary->head );
+	binary->head = list_node_reverse( binary->head );
 	return binary;
+}
+
+/**
+ * @brief indica se subStr è una sottostringa in str
+ * Precondition:  str e subStr devono essere stringhe con '\0'
+ * 				  se start_index != NULL verrà memorizzato l'indice dove inizia subStr in str
+ * @param str 
+ * @param subStr 
+ * @return true se subStr è una sotto stringa di str
+ * @return false altrimenti
+ */
+bool isSubstr(const char *str, const char *subStr, int *start_index) {
+	int length_str = strlen( str );
+	int length_subStr = strlen( subStr );
+    int n = length_str - length_subStr;
+	bool isSub = false;
+	// confronta ogni gruppo a length_subSt a length_subSt
+	// se la differenza è 0 allora subStr è sotto stringa di str
+	// altrimenti ricomuncia il procedimento cominciando dal carattere successivo finchè i < n + 1
+	int i = 0;
+    while( i < n+1 && !isSub ) {
+        if ( !strncmp(str + i, subStr, length_subStr ) ) {
+			if( start_index != NULL ){
+				*start_index = i;
+			}
+            isSub = true;
+        }
+		i += 1;
+    }
+
+    return isSub;
 }
