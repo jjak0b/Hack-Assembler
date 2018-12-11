@@ -1,3 +1,14 @@
+/*
+	Author: Jacopo Rimediotti
+	Convenzioni usate:
+		b_nomevar / isNomeVar 	-> usata per variabili booleane
+		n_nomevar 				-> usata (non spesso) per indicare un intero
+		str_nomevar 			-> usata per stringhe ( array di char con '\0' finale )
+		lenght_nomevar			-> usata in genere nelle stringhe per indicare la lunghezza della stringa prima del carattere '\0'
+		size_nomevar			-> usata per indicare la dimensione totale di una lista o array ( nelle quindi indica la dimensione allocata all'array )
+		lh_nomevar 				-> usata per indicare una struttura di tipo list_handler
+		l_nomevar 				-> usata per indicare una struttura di tipo lista
+*/
 #include <stdio.h>
 #include <stdlib.h> // #include <cstdlib>
 #include "utility.h"
@@ -93,6 +104,51 @@ list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
 	return lh_symbol_table;
 }
 
+list_handler *init_default_comp_table( list_handler *lh_symbol_table ){
+	lh_symbol_table = NULL;
+																									// a-XXXXXX
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "0",  2 + 8 + 32  ) ); 					// 0-101010
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "1", 128 - 1 ) ); 						// 0-111111
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "-1",  2 + 8 + 16 + 32 ) ); 			// 0-111010
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D", 4 + 8 ) ); 						// 0-001100
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "A", 16 + 32  ) ); 						// 0-111000
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "M", 16 + 32 + 64 ) );					// 1-111000
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "!D", 1 + 4 + 8 ) ); 					// 0-001101
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "!A", 1 + 16 + 32 ) ); 					// 0-110001
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "!M", 1 + 16 + 32 + 64) );				// 1-110001
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "-D", 1 + 2 + 4 + 8 ) ); 				// 0-001111
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "-A", 1 + 2 + 16 + 32 ) ); 				// 0-110011
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "-M", 1 + 2 + 16 + 32 + 64 ) );			// 1-110011
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D+1", 1 + 2 + 4 + 8 + 16 ) ); 			// 0-011111
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "A+1", 1 + 2 + 4 + 16 + 32 ) );			// 0-110111
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "M+1", 1 + 2 + 4 + 16 + 32 + 64 ) );	// 1-110111
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D-1", 2 + 4 + 8 ) ); 					// 0-001110
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "A-1", 2 + 16 + 32 ) ); 				// 0-110010
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "M-1", 2 + 16 + 32 + 64 ) );			// 1-110010
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D+A", 2 ) ); 							// 0-000010
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D+M", 2 + 64 ) );						// 1-000010
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D-A", 1 + 2 + 16 ) ); 					// 0-010011
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D-M", 1 + 2 + 16 + 64 ) );				// 1-010011
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "A-D", 1 + 2 + 4 ) ); 					// 0-000111
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "M-D", 1 + 2 + 4 + 64 ) );				// 1-000111
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D&A", 0 ) );							// 0-000000
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D&M", 64 ) );							// 1-000000
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D|A", 1 + 4 + 16 ) );					// 0-010101
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D|M", 1 + 4 + 16 + 32 ) );				// 1-010101
+	return lh_symbol_table;
+}
+
+list_handler *init_default_jmp_table( list_handler *lh_symbol_table ){
+	lh_symbol_table = NULL;
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JGT", 1 ) );	// 001
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JEQ", 2 ) );	// 010
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JGE", 3 ) );	// 011
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JLT", 4 ) );	// 100
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JNE", 5 ) );	// 101
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JLE", 6 ) );	// 110
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JMP", 7 ) );	// 111
+	return lh_symbol_table;
+}
 /*
 Cosa deve fare:
 1)Rimuovere i commenti
@@ -339,16 +395,22 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 }
 
 list_handler *replace_instructions( list_handler *lh_input ){
-	list_handler *lh_output = NULL;
+	list_handler *lh_comp_table = init_default_comp_table( NULL );
+	list_handler *lh_jmp_table = init_default_jmp_table( NULL );	
 	list_node *node = lh_input->head;
-	list_handler *lh_buffer = NULL;
+	list_handler *lh_buffer = NULL, *lh_output = NULL;
+	lh_output = malloc( sizeof( list_handler ) );
+	lh_output->head = NULL;
+	lh_output->current = NULL;
+	lh_output->tail = NULL;
 	char *value = NULL;
 	bool b_skip_char = false;
 	bool b_skip_line = false;
 	bool b_store_constant = false;
 	bool b_store_instruction = false;
+	int row = 0;// a puro scopo di informativo in caso di errore di sintassi
 	while( node != NULL ){
-		value = node->value;
+		value = (char*)node->value;		
 		if( !b_store_constant && !b_store_instruction ){
 			if( *value == '@' ){
 				b_store_constant = true;
@@ -356,41 +418,234 @@ list_handler *replace_instructions( list_handler *lh_input ){
 			else{
 				b_store_instruction = true;
 			}
+			printf("Storing: ");
 		}
 
 		if( *value == '\n' ){
+
 			if( b_store_constant){
+
 				char *str_constant = list_to_string( lh_buffer->head, NULL );
+				#ifdef DEBUG
+				printf( "\nNuova A-Istruction:\n");
+				list_node_print( "%c", lh_buffer->head);
+				printf( "\n");
+				#endif
 				int constant = atoi( str_constant );
-				free( str_constant );
+				printf("istruzione \"%s\" convertita in %d: \n", str_constant, constant );
 				list_handler *lh_constant = int_to_binary_list( constant, 16 );
-				char *str_binary = list_binary_to_string( lh_constant->head, 17 );
+				bool *first = lh_constant->head->value;
+				*first = false; // lo imposto a 0 come default per le A instruction
+
+				list_node_print( "%d", lh_constant->head);
+				printf( "\n");
+
+				char *str_binary = list_binary_to_string( lh_constant->head, NULL );
+
 				list_handler *lh_str_binary = string_to_list( str_binary );
 				free( str_binary );
-				list_node *head_tmp = lh_constant->head;
+				str_binary = NULL;
+				/*list_node *head_tmp = lh_constant->head;
 				list_node *tail_new = last( head_tmp );
 				list_node *tail_old = lh_output->tail;
 				setupNodesHandler( lh_constant->head, lh_output );
-				// collegamento liste
 				head_tmp->prev = tail_old;
 				tail_old->next = head_tmp;
 				lh_output->tail = tail_new;
-				tail_new->next = NULL;
+				tail_new->next = NULL;*/
+				// collegamento liste
+				lh_output->head = append( lh_output->head, lh_constant->head );
+				#ifdef DEBUG
+				printf( "Istruzione \"%s\" assemblata in:\t", str_constant );
+				list_node_print( "%c", lh_str_binary->head);
+				printf( "\n");
+				#endif
+				free( str_constant );
 				free( lh_constant );
+				lh_constant = NULL;
 				b_store_constant = false;
 			}
 			else if( b_store_instruction ){
+				#ifdef DEBUG
+				printf( "\nNuova C-Istruction:\n");
+				list_node_print( "%c", lh_buffer->head);
+				printf("\n");
+				#endif
 
+				list_handler *lh_binary = NULL;
+				
+				// Aggiungo 3 '1' alla lista
+				int *n_tmp = NULL;
+				for( int i = 1; i <= 3; i+=1 ){
+					n_tmp = malloc( sizeof( int ));
+					*n_tmp = true;
+					lh_binary = enqueue( lh_binary, n_tmp );
+				}
+				n_tmp = NULL;
+
+				int length_str;
+				char *str_instruction = list_to_string( lh_buffer->head, &length_str );
+				int start_jmp_instruction = length_str, end_dest_instruction=0;
+				
+				int n_3bit_dest = 0; // numero decimale da convertire in binario - inizializzato per caso "null" ( non memorizzato )
+				int n_3bit_jmp = 0; //numero decimale da convertire in binario - inizializzato per casocaso "null" ( nessun salto )
+// 				printf( "sequenza: %d\n", isSubstr( str_instruction , "=" , &end_dest_instruction ));
+
+
+				if( isSubstr( str_instruction , "=" , &end_dest_instruction ) ){
+					// printf( "2:%s\t%d\n", str_instruction, end_dest_instruction );
+					char *str_dest = malloc( sizeof( char ) * end_dest_instruction + 1);
+					strncpy( str_dest, str_instruction, end_dest_instruction);
+					str_dest[ end_dest_instruction] = '\0';
+					// printf( "3:%s\t%d\n", str_instruction, end_dest_instruction );
+					// printf( "4:%s\t%d\n", str_dest, end_dest_instruction );
+					// printf( "Dest:\t%s\n",  str_dest);
+					for( int i = 0; i < end_dest_instruction; i+=1 ){
+						if( str_dest[i] == 'M' ){
+							n_3bit_dest += 1; // 2^0
+						}
+						else if( str_dest[i] == 'D' ){
+							n_3bit_dest += 2; // 2^1
+						}
+						else if( str_dest[i] == 'A' ){
+							n_3bit_dest += 4; // 2^2
+						}
+					}
+					#ifdef DEBUG
+					printf( "Dest:\t%s\t%d\n", str_dest, n_3bit_dest );
+					#endif
+					free( str_dest );
+				}
+				list_handler *lh_binary_dest = int_to_binary_list( n_3bit_dest, 3 );
+				printf( "1:%s\t%d\n", str_instruction, end_dest_instruction );
+
+				#ifdef DEBUG
+				printf( "Sequenza ottenuta (dest):\n" );
+				list_node_print( "%d", lh_binary_dest->head);
+				printf( "\n" );
+				#endif
+
+				int length_jmp = length_str;
+				if( isSubstr( str_instruction , ";" , &start_jmp_instruction ) || isSubstr( str_instruction , "," , &start_jmp_instruction )){
+					
+					#ifdef DEBUG
+					printf( "Jump:\t%s\t%d\n", str_instruction + start_jmp_instruction + 1, start_jmp_instruction);
+					#endif
+
+					symbol *s_jmp = getFromSymbolTable( lh_jmp_table, str_instruction + start_jmp_instruction + 1 );
+					if( s_jmp != NULL ){
+						n_3bit_jmp = s_jmp->value;
+					}
+					free( s_jmp );
+				}
+				length_jmp =  length_str - (start_jmp_instruction+1);
+				list_handler *lh_binary_jmp = int_to_binary_list( n_3bit_jmp, 3 );
+/*
+				if(str_comp[length_str_comp-1] == '0' ){ // 0
+					n_3bit_comp = 42; // 101010
+				}
+				else if(str_comp[length_str_comp-1] == '1' ){ // 1
+					n_3bit_comp = 127; // 101010
+				}
+				else{
+
+					if( str_comp[length_str_comp-1] == 'A' || str_comp[length_str_comp-1] == 'M' ){ // A / M
+						n_3bit_comp = 48; // 110000
+					}
+					else if( str_comp[length_str_comp-1] == 'D'){ // D
+						n_3bit_comp = 12; // 001100
+					}
+
+					if( str_comp[length_str_comp-2]  == '-' ){ // -A/M	/	-D
+						n_3bit_comp += 3; //XXXX11
+					}
+					else if( str_comp[length_str_comp-2] == '!' ){// !A/M	/	!D
+						n_3bit_comp += 1; // XXXXX1
+					}
+					/*
+					if( str_comp[0] == '-' ){
+						if( str_comp[1] == '1' ){
+							n_3bit_comp = 58;
+						}
+					}
+					else if( isSubstr( str_comp, "&" ) ){
+						n_3bit_comp = 0; // 000000
+					}
+					else if( isSubstr( str_comp, "|" ) ){
+						n_3bit_comp = 21;
+					}
+
+					if( isSubstr( str_comp, "M" ) ){
+						n_3bit_comp += 64; // 2^6 -> flag bit più significativo 'a' per indicare se si usa registra M (a=1) ooppure A (a=0)
+					}
+
+				}
+*/				
+				/*Riguardare: possibile OFf by one*/
+				// int length_str_comp = length_str - end_dest_instruction -1 ;
+				int length_str_comp = length_str - (length_jmp-1)- end_dest_instruction ;
+				char *str_comp = malloc( sizeof( char ) * length_str_comp + 1);
+				strncpy( str_comp, str_instruction + end_dest_instruction + 1, start_jmp_instruction - end_dest_instruction);
+				symbol *s_comp = getFromSymbolTable( lh_comp_table, str_comp );
+			
+				#ifdef DEBUG
+				printf( "Sequenza ottenuta (jump):\n" );
+				list_node_print( "%d", lh_binary_jmp->head);
+				printf( "\n" );
+				#endif
+
+				list_handler *lh_binary_comp = NULL;
+				if( s_comp != NULL ){
+					lh_binary_comp = int_to_binary_list( s_comp->value, 7 );
+				}
+				else{
+					printf("Errore: Istruzione \"%s\" (lunghezza:%d) sconosciuta a riga %d\n", str_comp, length_str_comp,row );
+				}
+
+				#ifdef DEBUG
+				printf( "Sequenza ottenuta (comp):\n" );
+				list_node_print( "%d", lh_binary_comp->head);
+				printf( "\n" );
+				#endif
+
+				// collego le varie liste: 111->comp->dest->jump
+				list_handler *lh_tmp = lh_binary_comp;
+				lh_binary->head = append( lh_binary->head, lh_binary_comp->head );
+				free( lh_tmp );
+				lh_tmp = lh_binary_dest;
+				lh_binary->head = append( lh_binary->head, lh_binary_dest->head );
+				free( lh_tmp );
+				lh_tmp = lh_binary_jmp;
+				lh_binary->head = append( lh_binary->head, lh_binary_jmp->head );
+				free( lh_tmp );
+
+				char *str_binary = list_binary_to_string( lh_binary->head, NULL );
+				list_handler *lh_binary_string = string_to_list( str_binary );
+				lh_output->head = append( lh_output->head, lh_binary_string->head );
+				#ifdef DEBUG
+				printf( "Istruzione \"%s\" assemblata in:\t", str_instruction );
+				list_node_print( "%c", lh_binary_string->head);
+				printf( "\n" );
+				#endif
 				b_store_instruction = false;
 			}
 
+			delete_list( lh_buffer , true );
+			lh_buffer = NULL;
 			char *new_ln = malloc(sizeof(char));
 			*new_ln = '\n';
 			lh_output = enqueue( lh_output, new_ln );
 			b_skip_line = false;
+			row += 1;
+		}
+		else if( *value != '@'){
+			if( b_store_constant || b_store_instruction){
+				printf( "%c", *value);
+				lh_buffer = enqueue( lh_buffer, value );
+			}
 		}
 		node = node->next;
-	}	
+	}
 }
 
 list_handler *assembler( list_handler *lh_input ){	
@@ -398,7 +653,13 @@ list_handler *assembler( list_handler *lh_input ){
 	list_handler *lh_output = NULL;
 	lh_symbol_table = init_default_symbol_table( lh_symbol_table );
 	print_symbols( lh_symbol_table->head );
+	#ifdef DEBUG
+	printf( "Inizio Rimpiazzo Simboli...\n");
+	#endif
 	lh_output = replace_symbols( lh_input, lh_symbol_table );
+	#ifdef DEBUG
+	printf( "Inizio codifica istruzioni...\n");
+	#endif
 	lh_output = replace_instructions( lh_output );
 	// list_node_print( "%c", lh_output->head);
 	/*
