@@ -310,10 +310,12 @@ list_handler *enqueue( list_handler *handler, void *value ){
 		handler = new_tail->handler;
 	}
 	list_node *old_tail = handler->tail;
-	if( old_tail != new_tail ){ // Caso in cui la lista sia stata non sia stata appena creata e che quindi non ci sia solo il primo elemento
+	if( old_tail != new_tail ){ // Caso in cui la lista non sia stata appena creata e che quindi non ci sia solo il primo elemento
 		new_tail->prev = old_tail;
 		new_tail->next = NULL; // dovrebbe essere già a NULL dato che era in coda...
-		old_tail->next = new_tail;
+		if( old_tail != NULL ){
+			old_tail->next = new_tail;
+		}
 		handler->tail = new_tail;
 	}
 
@@ -366,4 +368,26 @@ void delete_list( list_handler *handler, bool b_delete_values ){
 			node = next;
 		}
 	}
+}
+
+
+list_node *append( list_node *l_destination, list_node *l_source){
+
+	if( l_destination == NULL ){
+		return l_source;
+	}
+
+	list_node *head_tmp = l_source;
+	list_node *tail_new = last( l_source );
+	list_node *tail_old = last( l_destination );
+	setupNodesHandler( l_source, l_destination->handler );
+	// collegamento liste
+	l_source->prev = tail_old;
+	tail_old->next = l_source;
+	if( l_destination->handler != NULL ){
+		l_destination->handler->head = l_destination;
+		l_destination->handler->tail = tail_new;
+	}
+	tail_new->next = NULL;
+	return l_destination;
 }

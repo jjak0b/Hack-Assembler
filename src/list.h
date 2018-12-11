@@ -139,4 +139,6 @@ bool isEqual( list_node *head1, list_node *head2 );
 
 void delete_list( list_handler *handler, bool b_delete_values );
 
+list_node *append( list_node *l_destination, list_node *l_source);
+
 #endif
