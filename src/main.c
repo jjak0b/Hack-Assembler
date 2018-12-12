@@ -108,7 +108,7 @@ list_handler *init_default_comp_table( list_handler *lh_symbol_table ){
 	lh_symbol_table = NULL;
 																									// a-XXXXXX
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "0",  2 + 8 + 32  ) ); 					// 0-101010
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "1", 128 - 1 ) ); 						// 0-111111
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "1", 64 - 1 ) ); 						// 0-111111
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "-1",  2 + 8 + 16 + 32 ) ); 			// 0-111010
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D", 4 + 8 ) ); 						// 0-001100
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "A", 16 + 32  ) ); 						// 0-111000
@@ -400,21 +400,20 @@ list_handler *replace_instructions( list_handler *lh_input ){
 	list_node *node = lh_input->head;
 	list_node *node_last = last( lh_input->head );
 	list_handler *lh_buffer = NULL, *lh_output = NULL;
-	char c = 'a';
-	lh_output = enqueue( lh_output, &c );
-	/*lh_output = malloc( sizeof( list_handler ) );
+	lh_output = malloc( sizeof( list_handler ) );
 	lh_output->head = NULL;
 	lh_output->current = NULL;
-	lh_output->tail = NULL;*/
+	lh_output->tail = NULL;
+
 	char *value = NULL;
-	bool b_skip_char = false;
-	bool b_skip_line = false;
 	bool b_store_constant = false;
 	bool b_store_instruction = false;
 	int row = 0;// a puro scopo di informativo in caso di errore di sintassi
 	while( node != NULL ){
-		value = (char*)node->value;		
-		printf( "%c", *value);
+		value = (char*)node->value;
+		#ifdef DEBUG
+		// printf( "%c", *value);
+		#endif
 		if( !b_store_constant && !b_store_instruction ){
 			if( *value == '@' ){
 				b_store_constant = true;
@@ -422,37 +421,37 @@ list_handler *replace_instructions( list_handler *lh_input ){
 			else{
 				b_store_instruction = true;
 			}
+			#ifdef DEBUG
+			printf( "\nRIGA: %d----------------------------\n", row);
 			printf("Storing: ");
+			#endif
 		}
 		if( *value == '\n' || node == node_last ){
 			if( node == node_last ){
 				lh_buffer = enqueue( lh_buffer, node->value );
 			}
-
 			if( b_store_constant){
 
 				char *str_constant = list_to_string( lh_buffer->head, NULL );
+				int constant = atoi( str_constant );
 				#ifdef DEBUG
 				printf( "\nNuova A-Istruction:\n");
 				list_node_print( "%c", lh_buffer->head);
 				printf( "\n");
 				#endif
-				int constant = atoi( str_constant );
-				printf("istruzione \"%s\" convertita in %d: \n", str_constant, constant );
 				list_handler *lh_constant = int_to_binary_list( constant, 16 );
 				bool *first = lh_constant->head->value;
 				*first = false; // lo imposto a 0 come default per le A instruction
-
 				char *str_binary = list_binary_to_string( lh_constant->head, NULL );
-
 				list_handler *lh_str_binary = string_to_list( str_binary );
 				free( str_binary );
 				str_binary = NULL;
 
 				// collegamento liste
-				lh_output->head = append( lh_output->head, lh_constant->head );
+				lh_output->head = append( lh_output->head, lh_str_binary->head );
+
 				#ifdef DEBUG
-				printf( "Istruzione \"%s\" assemblata in:\t", str_constant );
+				printf( "Costante \"%s\" codificata in:\t", str_constant );
 				list_node_print( "%c", lh_str_binary->head);
 				printf( "\n");
 				#endif
@@ -610,7 +609,7 @@ list_handler *replace_instructions( list_handler *lh_input ){
 				}
 
 				#ifdef DEBUG
-				printf( "Sequenza ottenuta (comp)(%s):\n", str_comp );
+				printf( "Sequenza ottenuta (comp)(%s):\t", str_comp );
 				list_node_print( "%d", lh_binary_comp->head);
 				printf( "\n" );
 				#endif
@@ -639,22 +638,16 @@ list_handler *replace_instructions( list_handler *lh_input ){
 
 			delete_list( lh_buffer , true );
 			lh_buffer = NULL;
-			// char *new_ln = malloc(sizeof(char)*3);
-			char new_ln[] = "Hello";
-			// *new_ln = '\n\r';
+
+			char *new_ln = malloc(sizeof(char)*2);
 			strcpy( new_ln, "\r\n");
 			list_handler *lh_nl = string_to_list( new_ln );
 			lh_output->head = append( lh_output->head, lh_nl->head );
-			/*lh_output = enqueue( lh_output, new_ln );*/
-			b_skip_line = false;
-			row += 1;
-			printf( "row: %d\n", row);
-			list_node_print( "%c", lh_output->head);
-			printf("\n");
+			row += 1;			
 		}
 		else if( *value != '@'){
 			if( b_store_constant || b_store_instruction){
-				// printf( "%c", *value);
+				printf( "%c", *value);
 				lh_buffer = enqueue( lh_buffer, value );
 			}
 		}
@@ -669,26 +662,19 @@ list_handler *assembler( list_handler *lh_input ){
 	list_handler *lh_output = NULL;
 	lh_symbol_table = init_default_symbol_table( lh_symbol_table );
 	print_symbols( lh_symbol_table->head );
+
 	#ifdef DEBUG
 	printf( "Inizio Rimpiazzo Simboli...\n");
 	#endif
 	lh_output = replace_symbols( lh_input, lh_symbol_table );
+
 	#ifdef DEBUG
 	printf( "Inizio codifica istruzioni...\n");
 	#endif
 	lh_output = replace_instructions( lh_output );
 
-	// list_node_print( "%c", lh_output->head);
-	/*
-	list_handler *lh_output = NULL;
-	list_node *node_current = lh_input->head;
-	while( node_current != NULL ){
-		// do stuff
-		node_current = next(lh_input);
-	}*/
 	return lh_output;
 }
-
 
 int main( int nArgs, char **args ){
 
@@ -726,7 +712,7 @@ int main( int nArgs, char **args ){
 						
 						#ifdef DEBUG
 						printf("caratteri elaborati: %d\n", size(  lh_output->head, true ) );
-						list_node_print( "\"%d\"", lh_output->head );
+						list_node_print( "%c", lh_output->head );
 						printf( "\n" );
 						#endif
 

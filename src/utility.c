@@ -260,11 +260,9 @@ list_handler *string_to_list( char *str ){
 	else{
 		int n = strlen( str );
 		if( n > 0 ){
-			// inizializzo la testa
-			char *c = (char*)malloc(sizeof(char));
-			*c = str[0];
-			list_handler *handler = enqueue( NULL, c );
-			for(int i = 1; i < n; i += 1 ){
+			char *c = NULL;
+			list_handler *handler = NULL;
+			for(int i = 0; i < n; i += 1 ){
 				c = (char*)malloc(sizeof(char)); // istanzio un nuovo carattere e copio il valore da str per evitare problemi ( vedere sotto)
 				*c = str[i];
 				handler = enqueue( handler, c ); // se fosse handler = enqueue( handler, &str[i] ); probabilemnte mi causera dei pending pointers nelle liste che puntano alla lista se faccio un suo free dal chiamante
@@ -278,12 +276,13 @@ list_handler *string_to_list( char *str ){
 
 list_handler *int_to_list( int n ){
 	list_handler *handler =  NULL;
+	int *n_tmp = (int*)malloc( sizeof( int ) );
 	if( n == 0 ){
-		list_node *head = list_node_new( &n, true, handler );
+		*n_tmp = 0;
+		list_node *head = list_node_new( n_tmp, true, handler );
 		handler = head->handler;
 	}
-	else{
-		int *n_tmp = (int*)malloc( sizeof( int ) );
+	else{		
 		*n_tmp = n % 10;
 		n = n / 10;
 		list_node *head = list_node_new( n_tmp, true, NULL );
