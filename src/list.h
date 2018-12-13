@@ -116,6 +116,8 @@ void *setupNodesHandler( list_node *node, list_handler *handler);
  */
 list_node *list_node_new( void *value, const bool b_create_handler, list_handler *handler );
 
+void delete_node( list_node *node);
+
 list_node *list_node_reverse( list_node *head );
 
 /**

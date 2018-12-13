@@ -32,7 +32,7 @@
  * @return La lunghezza della lista
  */
 int size( list_node *head, bool b_reachLast){
-	if( head == NULL ){
+	/*if( head == NULL ){
 		return 0;
 	}
 	if( b_reachLast ){
@@ -40,7 +40,19 @@ int size( list_node *head, bool b_reachLast){
 	}
 	else{
 		return 1 + size( head->prev, b_reachLast );
+	}*/
+	
+	int c = 0;
+	while( head != NULL ){
+		c+=1;
+		if( b_reachLast ){
+			head = head->next;
+		}
+		else{
+			head = head->prev;
+		}
 	}
+	return c;
 }
 
 /**
@@ -51,7 +63,7 @@ int size( list_node *head, bool b_reachLast){
  * @return list_node*  Il puntatore al primo nodo della lista
  */
 list_node *first( list_node *node ){
-	if( node == NULL ){
+	/*if( node == NULL ){
 		return NULL;
 	}
 	else if( node->prev == NULL ){
@@ -59,7 +71,13 @@ list_node *first( list_node *node ){
 	}
 	else{
 		return first( node->prev);
+	}*/
+	
+	while( node != NULL && node->prev != NULL ){
+		node = node->prev;
 	}
+
+	return node;
 }
 
 /**
@@ -70,7 +88,7 @@ list_node *first( list_node *node ){
  * @return list_node*  Il puntatore all'ultimo nodo della lista
  */
 list_node *last( list_node *head ){
-	if( head == NULL ){
+	/*if( head == NULL ){
 		return NULL;
 	}
 	else if( head->next == NULL ){
@@ -78,7 +96,12 @@ list_node *last( list_node *head ){
 	}
 	else{
 		return last( head->next);
+	}*/
+	while( head != NULL && head->next != NULL ){
+		head = head->next;
 	}
+
+	return head;
 }
 
 /**
@@ -249,6 +272,21 @@ list_node *list_node_new( void *value, const bool b_create_handler, list_handler
 	return head;
 }
 
+void delete_node( list_node *node){
+	if( node != NULL ){
+		if( node->prev != NULL ){
+			node->prev->next = node->next;
+		}
+		if( node->next != NULL){
+			node->next->prev = node->prev;
+		}
+		free( node->value );
+		node->value = NULL;
+		free( node );
+		node = NULL;
+	}
+}
+
 list_node *list_node_reverse( list_node *head ){
 	list_node  *head_new, *head_old;
 	head_new = NULL ;
@@ -270,10 +308,10 @@ list_node *list_node_reverse( list_node *head ){
  */
 void list_node_print( const char *format, list_node *head){
 	char *ptr_char =NULL;
-	if( head != NULL ){
+	while( head != NULL ){
 		ptr_char = head->value;
 		printf( format, *ptr_char);
-		list_node_print( format, head->next);
+		head = head->next;
 	}
 }
 
