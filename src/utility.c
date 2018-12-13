@@ -38,7 +38,7 @@ list_handler *readFile( char *filename, list_handler *l_handler ){
         while( !feof( fin ) ){
 			if( fscanf( fin, "%c", &c) == 1 ){
 				#ifdef DEBUG
-				printf("letto: '%c' -> ASCII: %d\n", c, (int)c);
+				// printf("letto: '%c' -> ASCII: %d\n", c, (int)c);
 				#endif				
 				ptr_char = (char*)malloc( sizeof(char) );
 				*ptr_char = c;
@@ -230,7 +230,7 @@ char *list_binary_to_string( list_node *head, int *size_str ){
 	if( size_str != NULL ){
 		*size_str = size_s;
 	}
-	char *str = malloc( sizeof( char ) * ( size_s ) );
+	char *str = (char*)malloc( sizeof( char ) * ( size_s ) );
 	bool *bit = NULL;
 	for( int i = 0; i < size_s - 1; i += 1 ){
 		bit = (bool*)tmp->value;
@@ -253,7 +253,7 @@ char *list_binary_to_string( list_node *head, int *size_str ){
  * @param str 
  * @return list_handler* 
  */
-list_handler *string_to_list( char *str ){
+list_handler *string_to_list( char str[] ){
 	if( str == NULL ){
 		return NULL;
 	}
@@ -303,7 +303,7 @@ list_handler *int_to_binary_list( int n, int unsigned max_bit_count ){
 	bool *bit = NULL;
 	int c = 0;
 	while( c < max_bit_count /*n!=0*/ ){
-		bit = malloc( sizeof( bool ) );
+		bit = (bool*)malloc( sizeof( bool ) );
 		*bit = n % 2;
 		n = n / 2;
 		binary = enqueue( binary, bit );

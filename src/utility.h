@@ -1,7 +1,7 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
-#define DEBUG /*IMPORTANTE: Disabilitare quando prima di consegnare*/
+// #define DEBUG /*IMPORTANTE: Disabilitare prima di consegnare */
 /*
 	Per usare meno spazio occupato da una variabile che io considero essere booleana,
 	potrei considerare 'unsigned char' di 1 solo byte per usare il booleano (memorizzando comunque interi) ma non vorrei essere frainteso
