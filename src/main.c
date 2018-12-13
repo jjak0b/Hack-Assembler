@@ -5,9 +5,12 @@
 		n_nomevar 				-> usata (non spesso) per indicare un intero
 		str_nomevar 			-> usata per stringhe ( array di char con '\0' finale )
 		lenght_nomevar			-> usata in genere nelle stringhe per indicare la lunghezza della stringa prima del carattere '\0'
-		size_nomevar			-> usata per indicare la dimensione totale di una lista o array ( nelle quindi indica la dimensione allocata all'array )
+		size_nomevar			-> usata per indicare la dimensione totale di una lista o array ( nelle stringhe quindi indica la dimensione allocata all'array )
 		lh_nomevar 				-> usata per indicare una struttura di tipo list_handler
 		l_nomevar 				-> usata per indicare una struttura di tipo lista
+	Consiglio per chi dovrà esaminare il codice: Consiglio vivamente di compilarlo decommentando la definizione di 'DEBUG' in utility.h
+	Inoltre per file aventi tantissime istruzioni, (quando superano le migliaia) potrebbe accadere che l'assembler ci metta qualche minuto per codificare le istruzioni
+	Questo è dovuto al fatto che non è molto ottimizzato
 */
 #include <stdio.h>
 #include <stdlib.h> // #include <cstdlib>
@@ -134,7 +137,7 @@ list_handler *init_default_comp_table( list_handler *lh_symbol_table ){
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D&A", 0 ) );							// 0-000000
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D&M", 64 ) );							// 1-000000
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D|A", 1 + 4 + 16 ) );					// 0-010101
-	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D|M", 1 + 4 + 16 + 32 ) );				// 1-010101
+	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "D|M", 1 + 4 + 16 + 64 ) );				// 1-010101
 	return lh_symbol_table;
 }
 
@@ -159,13 +162,10 @@ Cosa deve fare:
 
 list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_table ){
 	/* 
-		Vengono registrate le label nella symbol table ma non vengono memporizzate nell'output
+		Vengono registrate le label nella symbol table ma non vengono memoorizzate nell'output
 		Vengono inseriti tutti i caratteri delle C ed A istruction da lh_input;
 	 	Vengono sostituite le label e le variabili dopo '@' con gli indirizzi numerici trovati nella symbol table
 	*/
-	#ifdef DEBUG
-	printf("->replace_symbols()\n");
-	#endif
 	list_handler *lh_output = NULL;
 	list_handler *lh_labelBuffer = NULL; // buffer per memorizzare i caratteri delle label uno alla volta
 	list_handler *lh_current_word = NULL;// non usato
@@ -183,28 +183,38 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 	for( int i = 0; i < 3; i+=1){
 		#ifdef DEBUG
 		if( i == 0){
-			printf("!!!!!!!!!!! RIMOZIONE COMMENTI !!!!!!!!\n");
+			printf("\n!!!!!!!!!!! RIMOZIONE COMMENTI !!!!!!!!\n");
 		}
 		if( i == 1){
-			printf("!!!!!!!!!!! LETTURA LABELS !!!!!!!!\n");
+			printf("\n!!!!!!!!!!! LETTURA LABELS !!!!!!!!\n");
 		}
 		else{
-			printf("!!!!!!!!!!! SOSTITUZIONE LABELS !!!!!!!!\n");
+			printf("\n!!!!!!!!!!! SOSTITUZIONE LABELS !!!!!!!!\n");
 		}
 		#endif
 		// il primo ciclo si occuerà di rimuovere i i commenti
-		// il seocnod ciclo si occuperà di leggere le definizione delle label e rimoverle,
+		// il secondo ciclo si occuperà di leggere le definizione delle label e rimoverle,
 		// il terzo ciclo si occuperà di sostituire le label( o varaibili) nelle A instructiomn (@)
 		while( node != NULL ){
-			value = (char*)node->value;
+			value = (char*)malloc( sizeof(char));
+			*value = (*(char*)(node->value));
+
 			if( node->next != NULL ){
 				next_value = (char*)node->next->value;
 			}
 			else{
 				next_value = NULL;
 			}
-
-			if( *value != ' ' && *value != '\t' && *value != '\r'){ // ignoro questi caratteri durante filtro dei caratteri
+			
+			if( *value != ' ' && *value != '\t' && *value != '\r' // ignoro questi caratteri durante filtro dei caratteri ( Solo \n verrà utilizzato come delimitatore di fine riga )
+				// Le seguenti condizioni sono necessarie affinchè, dopo aver ignorato i commenti, vengano ignorate le righe vuote ( a causa di commenti eliminati o perchè le righe vuote erano già presenti)
+				&& 	!( //procedo con l'elaborazione dei caratteri se inoltre non mi trovo nelle seguenti situazioni:
+					( i >= 1 // sono ad un ciclo superiore al primo
+					&& *value == '\n' // il carattere attuale è \n
+					&& ( node->prev == NULL	// non esiste un carattere precedente a quello corrente, ovvero sono al primo carattere
+						|| ( node->prev != NULL && ( *(char*)(node->prev->value)) == '\n' ) // il carattere precedente è un \n
+					) ) ) )
+			{
 				if( i == 0 ){ // PRIMO CICLO: ignora i commenti
 					if( !b_ignore_line){
 						if( *value == '/'  ){
@@ -242,12 +252,16 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 								if( s == NULL){ // aggiungo il nuovo simbolo alla lista con indirizzo prossima istruzione
 									s = new_symbol( str_label, row );
 									lh_symbol_table = enqueue( lh_symbol_table, s );
+									#ifdef DEBUG
 									printf("[NUOVO SIMBOLO :(%s) -> %d]", s->key, s->value );
+									#endif
 								}
 								b_store_label = false; // smetto di memorizzare la label 
 								b_ignore_line = true; // posso ignorare il resto della riga
 								b_skip_char = true; // il prossimo carattere sarà un '\n', ma ho già uno '\n' della riga precedence, di conseguenza avrei una linea vuota senza questo
-								delete_list( lh_labelBuffer, false );
+
+								setupNodesHandler( lh_labelBuffer->head, lh_input );
+								free( lh_labelBuffer );
 								lh_labelBuffer = NULL;
 								// node_start_of_line->next = node->next;
 							}
@@ -309,29 +323,14 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 							// dopo @ : invece che scrivere il nome della variabile inserisce l'indirizzo assegnato
 							char *str_address = int_to_string( s->value );//La lista d'output usa caratteri: dopo devo convertirli in carattere
 							list_handler *lh_address = string_to_list( str_address );
-							list_node *head_address = lh_address->head;
-							#ifdef DEBUG
-							// printf("Indirizzo [%d] = \"%s\"\n", s->value, str_address );
-							#endif
-
-							// libero la memoria inutilizzata
-							free( lh_address );
-							lh_address = NULL;
-
-							setupNodesHandler( head_address, lh_output);
+							free(str_address);
 							
 							// collego L'ultimo elemento registrato nell'output ( ovvero '@' ) con il primo dell'indirizzo registrato
-							list_node *old_tail = lh_output->tail;
-							list_node *last_address = last( head_address );
-							head_address->prev = old_tail;
-							old_tail->next = head_address;
-							last_address->next = NULL;
-							lh_output->tail = last_address;
-
-							// list_node_print( "%c", lh_output->head );
-
-							// libero la memoria inutilizzata
-							delete_list( lh_labelBuffer, false );
+							lh_output->head = append( lh_output->head, lh_address->head );
+							free( lh_address );
+							lh_address = NULL;
+							setupNodesHandler( lh_labelBuffer->head, lh_input);
+							free( lh_labelBuffer );
 							lh_labelBuffer = NULL;
 
 							// non sto più memorizzando
@@ -339,8 +338,9 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 						}
 					}
 				}
-
+				#ifdef DEBUG
 				printf("%c", *value );
+				#endif
 				if( !b_ignore_line || ( b_ignore_line && *value == '\n')  ){
 					if( !b_skip_char ){
 						if( b_store_label ){// memorizzo il carattere
@@ -364,16 +364,12 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 					node_start_of_line = node->next;// tengo traccia del primo nodo della riga
 				}
 			}
+
 			node = node->next;
 		}
 
 		#ifdef DEBUG
-		printf("Ciclo elaborazione %d concluso.\n", i+1 );
-		printf("------Simboli in memoria:------\n");
-		print_symbols( lh_symbol_table->head );
-		printf("-------------------------------\n");
-		list_node_print( "%c", lh_output->head);
-		printf("-------------------------------\n");
+		printf("\nCiclo elaborazione %d concluso.\n", i+1 );
 		#endif
 
 		if( i < 2){
@@ -389,8 +385,6 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 			node_start_of_line = node;
 		}
 	}
-
-	// list_node_print( "%c", lh_output->head);
 	return lh_output; 
 }
 
@@ -399,6 +393,7 @@ list_handler *replace_instructions( list_handler *lh_input ){
 	list_handler *lh_jmp_table = init_default_jmp_table( NULL );	
 	list_node *node = lh_input->head;
 	list_node *node_last = last( lh_input->head );
+	list_node *node_tmp = NULL;
 	list_handler *lh_buffer = NULL, *lh_output = NULL;
 	lh_output = malloc( sizeof( list_handler ) );
 	lh_output->head = NULL;
@@ -411,9 +406,6 @@ list_handler *replace_instructions( list_handler *lh_input ){
 	int row = 0;// a puro scopo di informativo in caso di errore di sintassi
 	while( node != NULL ){
 		value = (char*)node->value;
-		#ifdef DEBUG
-		// printf( "%c", *value);
-		#endif
 		if( !b_store_constant && !b_store_instruction ){
 			if( *value == '@' ){
 				b_store_constant = true;
@@ -426,11 +418,11 @@ list_handler *replace_instructions( list_handler *lh_input ){
 			printf("Storing: ");
 			#endif
 		}
-		if( *value == '\n' || node == node_last ){
-			if( node == node_last ){
+		if( *value == '\n' || ( node == node_last && *value != '\n') ){
+			if( ( node == node_last && *value != '\n') ){
 				lh_buffer = enqueue( lh_buffer, node->value );
 			}
-			if( b_store_constant){
+			if( b_store_constant){ // elabora le A instruction
 
 				char *str_constant = list_to_string( lh_buffer->head, NULL );
 				int constant = atoi( str_constant );
@@ -439,16 +431,18 @@ list_handler *replace_instructions( list_handler *lh_input ){
 				list_node_print( "%c", lh_buffer->head);
 				printf( "\n");
 				#endif
+
 				list_handler *lh_constant = int_to_binary_list( constant, 16 );
 				bool *first = lh_constant->head->value;
 				*first = false; // lo imposto a 0 come default per le A instruction
+				first = NULL;
 				char *str_binary = list_binary_to_string( lh_constant->head, NULL );
+				delete_list( lh_constant, true );
+				lh_constant = NULL;
+
 				list_handler *lh_str_binary = string_to_list( str_binary );
 				free( str_binary );
 				str_binary = NULL;
-
-				// collegamento liste
-				lh_output->head = append( lh_output->head, lh_str_binary->head );
 
 				#ifdef DEBUG
 				printf( "Costante \"%s\" codificata in:\t", str_constant );
@@ -456,11 +450,16 @@ list_handler *replace_instructions( list_handler *lh_input ){
 				printf( "\n");
 				#endif
 				free( str_constant );
-				free( lh_constant );
-				lh_constant = NULL;
+				str_constant = NULL;
+				
+				// collegamento liste
+				lh_output->head = append( lh_output->head, lh_str_binary->head );
+				// free( lh_str_binary );
+				
 				b_store_constant = false;
+				lh_str_binary = NULL;
 			}
-			else if( b_store_instruction ){
+			else if( b_store_instruction ){ // elabora le C instruction
 				#ifdef DEBUG
 				printf( "\nNuova C-Istruction:\n");
 				list_node_print( "%c", lh_buffer->head);
@@ -494,13 +493,12 @@ list_handler *replace_instructions( list_handler *lh_input ){
 				int end_jmp_instruction = 0;
 
 				bool hasJump = isSubstr( str_instruction , ";" , &start_jmp_instruction ) || isSubstr( str_instruction , "," , &start_jmp_instruction );
-				// printf("HAS JUMP:%d\t%s\n", hasJump, str_instruction);
+
 				// dest=comp;jump
 				int start_comp_instruction = end_dest_instruction;
 				int end_comp_instruction = start_jmp_instruction;
 
 				if( hasJump ){ // caso ;jump
-					// printf( "jump\n");
 					end_jmp_instruction = length_str;
 					end_comp_instruction = start_jmp_instruction;
 					start_jmp_instruction += 1;
@@ -512,7 +510,6 @@ list_handler *replace_instructions( list_handler *lh_input ){
 					}
 				}
 				else{
-					// printf( "NOT jump\n");
 					end_jmp_instruction = start_jmp_instruction;
 					if( hasDest ){ // caso dest=comp
 						start_comp_instruction = end_dest_instruction + 1;
@@ -526,18 +523,12 @@ list_handler *replace_instructions( list_handler *lh_input ){
 				
 				int n_3bit_dest = 0; // numero decimale da convertire in binario - inizializzato per caso "null" ( non memorizzato )
 				int n_3bit_jmp = 0; //numero decimale da convertire in binario - inizializzato per casocaso "null" ( nessun salto )
-				// 	printf( "sequenza: %d\n", isSubstr( str_instruction , "=" , &end_dest_instruction ));
 
 				int length_dest = end_dest_instruction - start_dest_instruction;
 				char *str_dest = malloc( sizeof( char ) * length_dest + 1);
-				str_dest[0] = '\0';
+				strncpy( str_dest, str_instruction, length_dest );
+				str_dest[ length_dest ] = '\0';
 				if( hasDest ){
-					// printf( "2:%s\t%d\n", str_instruction, end_dest_instruction );
-					strncpy( str_dest, str_instruction, length_dest );
-					str_dest[ length_dest ] = '\0';
-					// printf( "3:%s\t%d\n", str_instruction, end_dest_instruction );
-					// printf( "4:%s\t%d\n", str_dest, end_dest_instruction );
-					// printf( "Dest:\t%s\n",  str_dest);
 					for( int i = 0; i < end_dest_instruction; i+=1 ){
 						if( str_dest[i] == 'M' ){
 							n_3bit_dest += 1; // 2^0
@@ -549,55 +540,48 @@ list_handler *replace_instructions( list_handler *lh_input ){
 							n_3bit_dest += 4; // 2^2
 						}
 					}
-					// free( str_dest );
 				}
 				#ifdef DEBUG
-				printf( "Dest:\t%s\t|%d\t|%d\n", str_dest, length_dest, end_dest_instruction );
+				printf( "Dest:\t\"%s\"\t(start char delim: %d)\t(end char delim: %d)\t(length: %d)\n", str_dest, start_dest_instruction, end_dest_instruction, length_dest );
 				#endif
+				free( str_dest );
 				list_handler *lh_binary_dest = int_to_binary_list( n_3bit_dest, 3 );
-				// printf( "1:%s\t%d\n", str_instruction, end_dest_instruction );
 
 				#ifdef DEBUG
-				printf( "Sequenza ottenuta (dest)(%s):\n", str_dest );
+				printf( "Sequenza ottenuta (dest)(%s): ", str_dest );
 				list_node_print( "%d", lh_binary_dest->head);
 				printf( "\n" );
 				#endif
 
-				//printf("start_jump %d\n", start_jmp_instruction );
-				//printf("end_jump %d\n", end_jmp_instruction );
 				int length_jmp = end_jmp_instruction - start_jmp_instruction;
 				char *str_jump = malloc( sizeof( char ) * ( length_jmp + 1) );
+				strncpy( str_jump, str_instruction + start_jmp_instruction, length_jmp );
+				str_jump[ length_jmp ] = '\0';
+				#ifdef DEBUG
+				printf( "Jump:\t\"%s\"\t(start char delim: %d)\t(end char delim: %d)\t(length: %d)\n", str_jump, start_jmp_instruction, end_jmp_instruction, length_jmp );
+				#endif
 				if( hasJump ){
-					strncpy( str_jump, str_instruction + start_jmp_instruction, length_jmp );
-					str_jump[ length_jmp ] = '\0';
-
 					symbol *s_jmp = getFromSymbolTable( lh_jmp_table, str_instruction + start_jmp_instruction );
 					if( s_jmp != NULL ){
 						n_3bit_jmp = s_jmp->value;
 					}
 				}
-				// length_jmp =  length_str - (start_jmp_instruction+1);
 				list_handler *lh_binary_jmp = int_to_binary_list( n_3bit_jmp, 3 );
 
 				#ifdef DEBUG
-				printf( "Jump:\t%s\t%d\t%d\n", str_jump/*str_instruction + start_jmp_instruction*/, length_jmp, end_jmp_instruction);
-				#endif
-
-				#ifdef DEBUG
-				//printf("Jump:\t%s\t|%d\t|%d\n", str_jump, s);
-				printf( "Sequenza ottenuta (jump)(%s):\n", str_jump );
+				printf( "Sequenza ottenuta (jump)(%s): ", str_jump );
 				list_node_print( "%d", lh_binary_jmp->head);
 				printf( "\n" );
 				#endif
+				free( str_jump );
 
-				//	printf("start_comp %d\n", start_comp_instruction );
-				//	printf("end_comp %d\n", end_comp_instruction );
-			
-				int length_str_comp = end_comp_instruction - start_comp_instruction ;
-				// int length_str_comp = (end_comp_instruction - start_comp_instruction) ;
-				char *str_comp = malloc( sizeof( char ) * ( length_str_comp + 1 ) );
-				strncpy( str_comp, str_instruction + start_comp_instruction, length_str_comp );
-				str_comp[ length_str_comp ] = '\0';
+				int length_comp = end_comp_instruction - start_comp_instruction ;
+				char *str_comp = malloc( sizeof( char ) * ( length_comp + 1 ) );
+				strncpy( str_comp, str_instruction + start_comp_instruction, length_comp );
+				str_comp[ length_comp ] = '\0';
+				#ifdef DEBUG
+				printf( "Comp:\t\"%s\"\t(start char delim: %d)\t(end char delim: %d)\t(length: %d)\n", str_comp, start_comp_instruction, end_comp_instruction, length_comp );
+				#endif
 				symbol *s_comp = getFromSymbolTable( lh_comp_table, str_comp );
 
 				list_handler *lh_binary_comp = NULL;
@@ -605,55 +589,72 @@ list_handler *replace_instructions( list_handler *lh_input ){
 					lh_binary_comp = int_to_binary_list( s_comp->value, 7 );
 				}
 				else{
-					printf("Errore: Istruzione \"%s\" (lunghezza:%d) sconosciuta a riga %d\n", str_comp, length_str_comp,row );
+					printf("Errore: Istruzione ( avente lunghezza: %d) \"%s\" sconosciuta a riga %d\n", str_comp, length_comp, row );
 				}
 
 				#ifdef DEBUG
-				printf( "Sequenza ottenuta (comp)(%s):\t", str_comp );
+				printf( "Sequenza ottenuta (comp)(%s): ", str_comp );
 				list_node_print( "%d", lh_binary_comp->head);
 				printf( "\n" );
 				#endif
 
 				// collego le varie liste: 111->comp->dest->jump
-				list_handler *lh_tmp = lh_binary_comp;
 				lh_binary->head = append( lh_binary->head, lh_binary_comp->head );
-				free( lh_tmp );
-				lh_tmp = lh_binary_dest;
+				free( lh_binary_comp );
 				lh_binary->head = append( lh_binary->head, lh_binary_dest->head );
-				free( lh_tmp );
-				lh_tmp = lh_binary_jmp;
+				free( lh_binary_dest );
 				lh_binary->head = append( lh_binary->head, lh_binary_jmp->head );
-				free( lh_tmp );
+				free( lh_binary_jmp );
 
 				char *str_binary = list_binary_to_string( lh_binary->head, NULL );
+				delete_list( lh_binary, true );
+				lh_binary = NULL;
+
 				list_handler *lh_binary_string = string_to_list( str_binary );
+				free( str_binary );
+				str_binary = NULL;
+
 				lh_output->head = append( lh_output->head, lh_binary_string->head );
 				#ifdef DEBUG
 				printf( "Istruzione \"%s\" assemblata in:\t", str_instruction );
 				list_node_print( "%c", lh_binary_string->head);
 				printf( "\n" );
 				#endif
+				free( lh_binary_string );
+				lh_binary_string = NULL;
+				
 				b_store_instruction = false;
 			}
 
 			delete_list( lh_buffer , true );
 			lh_buffer = NULL;
-
-			char *new_ln = malloc(sizeof(char)*2);
-			strcpy( new_ln, "\r\n");
-			list_handler *lh_nl = string_to_list( new_ln );
+			// Uso il set di caratteri di nuova linea per evitare errori di codifica nel file
+			list_handler *lh_nl = string_to_list( "\r\n" );
 			lh_output->head = append( lh_output->head, lh_nl->head );
 			row += 1;			
 		}
 		else if( *value != '@'){
 			if( b_store_constant || b_store_instruction){
+				#ifdef DEBUG
 				printf( "%c", *value);
+				#endif
 				lh_buffer = enqueue( lh_buffer, value );
+			}
+			else{
+				node_tmp = node;
 			}
 		}
 		node = node->next;
+		if( node_tmp != NULL ){
+			delete_node( node_tmp );
+		}
 	}
+	#ifdef DEBUG
+	printf( "\n###### Fine codifica istruzioni ######\n");
+	#endif
 
+	delete_list( lh_comp_table, true );
+	delete_list( lh_jmp_table, true );
 	return lh_output;
 }
 
@@ -661,18 +662,27 @@ list_handler *assembler( list_handler *lh_input ){
 	list_handler *lh_symbol_table = NULL;
 	list_handler *lh_output = NULL;
 	lh_symbol_table = init_default_symbol_table( lh_symbol_table );
-	print_symbols( lh_symbol_table->head );
 
 	#ifdef DEBUG
-	printf( "Inizio Rimpiazzo Simboli...\n");
+	printf( "\n###### Inizio Rimpiazzo Simboli ######\n");
+	#else
+	printf( "\nSostituzioni etichette in corso: attendere... (Potrebbe richiedere un po' di tempo se il file contiene molte istruzioni)\n");
 	#endif
 	lh_output = replace_symbols( lh_input, lh_symbol_table );
 
-	#ifdef DEBUG
-	printf( "Inizio codifica istruzioni...\n");
-	#endif
-	lh_output = replace_instructions( lh_output );
 
+	#ifdef DEBUG
+	printf( "\n###### Fine Rimpiazzo Simboli ######\n");
+	// bool b_w = writeFile( "tmp.asm", lh_output );
+	// printf( "Scrittura della fase di rimpiazzo Simboli: %d\n", b_w );	
+	printf( "###### Dump della lista etichette: ######\n");
+	print_symbols( lh_symbol_table->head );
+	printf( "\n###### Inizio codifica istruzioni ######\n");
+	#else
+	printf( "\nCodifica delle istruzioni in corso: attendere... (Potrebbe richiedere qualche minuto se il file contiene molte istruzioni)\n");
+	#endif
+	delete_list( lh_symbol_table, true );
+	lh_output = replace_instructions( lh_output );
 	return lh_output;
 }
 
@@ -698,7 +708,7 @@ int main( int nArgs, char **args ){
 				else if( lh_input->head != NULL ){
 					ptr_char = (char*)lh_input->head->value;
 					if( *ptr_char == '\0' ){
-						printf("ERRORE: Il file '%s' risulta vuoto\n", filename );	
+						printf("ERRORE: Il file '%s' risulta vuoto\n", filename );
 					}
 					else{
 						printf("file '%s' letto con successo\n", filename);
@@ -706,10 +716,12 @@ int main( int nArgs, char **args ){
 						#ifdef DEBUG
 						printf("caratteri letti: %d\n", size(  lh_input->head, true ) );
 						list_node_print( "%c", lh_input->head );
+						printf("\n");
 						#endif
 						
 						lh_output = assembler( lh_input ); // elabora il contenuto del file, restituendo il contenuto da scrivere su file
-						
+						delete_list( lh_input, true );
+						lh_input = NULL;
 						#ifdef DEBUG
 						printf("caratteri elaborati: %d\n", size(  lh_output->head, true ) );
 						list_node_print( "%c", lh_output->head );
@@ -735,6 +747,7 @@ int main( int nArgs, char **args ){
 							printf("ERRORE: Impossbile completare l'operazione a causa di un errore durante l'elaborazione\n");
 						}
 					}
+					delete_list( lh_output, true);
 				}
 			}
 		}
