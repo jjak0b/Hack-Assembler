@@ -28,10 +28,17 @@
 #endif
 
 typedef struct symbol{
-	char *key;
-	int value;
+	char *key; // identificatore del simbolo
+	int value; // valore del simbolo
 } symbol;
 
+/**
+ * @brief Istanzia un nuovo simbolo assegnando i valori specificati
+ * PreCondition: key != NULL
+ * @param key : identificatore del simbolo
+ * @param value : valore del simbolo
+ * @return symbol* puntatore al nuovo simbolo istanziato
+ */
 symbol *new_symbol( char *key, int value){
 	symbol *s = malloc(sizeof( symbol ) );
 	s->key = key;
@@ -39,6 +46,11 @@ symbol *new_symbol( char *key, int value){
 	return s;
 }
 
+/**
+ * @brief Stampa a schermo le informazioni relative ad ogni simbolo della lista a partire dal nodo dato
+ * 
+ * @param head 
+ */
 void print_symbols( list_node *head ){
 	symbol *s = NULL;
 	if( head != NULL ){
@@ -53,6 +65,13 @@ void print_symbols( list_node *head ){
 	}
 }
 
+/**
+ * @brief restituisce se presente il puntatore ad una struttura symbol presente nella lista data con la str_label specificata, altriementi NULL
+ * PreCondition: lh_symbol_table deve contenere ua lista, di cui ogni nodo punta ad una struttura symbol
+ * @param lh_symbol_table Handler della lista di symbol in cui cercare
+ * @param str_label chiave o identificatore del simbolo
+ * @return symbol* puntatore della struttura symbol
+ */
 symbol *getFromSymbolTable( list_handler *lh_symbol_table, char *str_label ){
 	if( lh_symbol_table == NULL ){
 		return NULL;
@@ -81,9 +100,13 @@ symbol *getFromSymbolTable( list_handler *lh_symbol_table, char *str_label ){
 	return s_replace;
 }
 
-list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
-	lh_symbol_table = NULL;
-	symbol *s;
+/**
+ * @brief restituisce l'handler della lista contenente i simboli (symbol) delle label con relativi indirizzi
+ * 
+ * @return list_handler* 
+ */
+list_handler *init_default_symbol_table(){
+	list_handler *lh_symbol_table = NULL;
 	char reg[4];
 	char *str_RN;
 	char str_N[3];
@@ -107,8 +130,13 @@ list_handler *init_default_symbol_table( list_handler *lh_symbol_table ){
 	return lh_symbol_table;
 }
 
-list_handler *init_default_comp_table( list_handler *lh_symbol_table ){
-	lh_symbol_table = NULL;
+/**
+ * @brief restituisce l'handler della lista contenente tutte le istruzioni di computazione VALIDE dell'ISA hack con relativi valori decimali ( che combaciano con le sequenze binarie se convertiti )
+ * 
+ * @return list_handler* 
+ */
+list_handler *init_default_comp_table(){
+	list_handler *lh_symbol_table = NULL;
 																									// a-XXXXXX
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "0",  2 + 8 + 32  ) ); 					// 0-101010
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "1", 64 - 1 ) ); 						// 0-111111
@@ -141,8 +169,13 @@ list_handler *init_default_comp_table( list_handler *lh_symbol_table ){
 	return lh_symbol_table;
 }
 
-list_handler *init_default_jmp_table( list_handler *lh_symbol_table ){
-	lh_symbol_table = NULL;
+/**
+ * @brief restituisce l'handler della lista contenente tutte le istruzioni di salto (eccetto null->NON SALTO) dell'ISA hack con relativi valori decimali ( che combaciano con le sequenze binarie se convertiti )
+ * 
+ * @return list_handler* 
+ */
+list_handler *init_default_jmp_table(){
+	list_handler *lh_symbol_table = NULL;
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JGT", 1 ) );	// 001
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JEQ", 2 ) );	// 010
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JGE", 3 ) );	// 011
@@ -152,14 +185,18 @@ list_handler *init_default_jmp_table( list_handler *lh_symbol_table ){
 	lh_symbol_table = enqueue( lh_symbol_table, new_symbol( "JMP", 7 ) );	// 111
 	return lh_symbol_table;
 }
-/*
-Cosa deve fare:
-1)Rimuovere i commenti
-2)Aggiungere alla symbol_table le label dei salti -> ( label )
-3)Aggiungere alla symbol_table le label delle variabili (indirizzi @i)
-2)Sostituire le label e variabili con i simboli in symbol_table -> ( @label , @i)
-*/
 
+/**
+ * @brief Copia e nel mentre elabora i caratteri di una list_handler in input, secondo la sintassi dell' assemblatore hack, nelle seguenti fasi:
+ * 1) Rimuove i commenti, tabulazioni, righe e spazi superflui
+ * 2) Aggiunge alla symbol_table le label dei salti -> ( label )
+ * 3) Aggiunge alla symbol_table le label delle variabili (indirizzi @i)
+ * 2) Sostituisce le label e variabili con i simboli in symbol_table -> ( @label , @i)
+ * PostCondition: Nell'output il set di caratteri di fine riga "\r\n" sono sostituiti con solo '\n'
+ * @param lh_input : list_handler contenente una lista di caratteri grezzi di istruzioni da codificare
+ * @param lh_symbol_table : list_handler contenente una lista di simboli
+ * @return list_handler* :il puntatore di una nuova list_handler contenentui i caratteri elaborati
+ */
 list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_table ){
 	/* 
 		Vengono registrate le label nella symbol table ma non vengono memoorizzate nell'output
@@ -168,8 +205,7 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 	*/
 	list_handler *lh_output = NULL;
 	list_handler *lh_labelBuffer = NULL; // buffer per memorizzare i caratteri delle label uno alla volta
-	list_handler *lh_current_word = NULL;// non usato
-	list_node *node_start_of_line = NULL;// dopo ogni fine righa tiene traccia dell primo nodo nella riga corrente
+	list_node *node_start_of_line = NULL;// (non usato ) dopo ogni fine righa tiene traccia dell primo nodo nella riga corrente
 	list_node *node = lh_input->head; // tiene traccia del nodo (con carattere) puntato corrente
 	char *value = NULL; // puntatore del carattere puntato da node
 	char *next_value = NULL;// puntatore del carattere successivo puntato da node
@@ -388,9 +424,15 @@ list_handler *replace_symbols( list_handler *lh_input, list_handler *lh_symbol_t
 	return lh_output; 
 }
 
+/**
+ * @brief Elabora e codifica le istruzioni (prive di label o variabili ) già precedentemente elaborate da replace_symbols(...)
+ * PostCondition: Nella lista del list_handler puntata dal puntatore restituito, i caratteri di fine riga sono nuovamente sostituiti con il set di caratteri "\r\n"
+ * @param lh_input : list_handler contenente una lista di caratteri precedentemente elaborati da replace_symbols(...) con istruzioni da codificare in hack
+ * @return list_handler* : il puntatore di una nuova list_handler elaborata contenente le sequenze di bit codificate in hack
+ */
 list_handler *replace_instructions( list_handler *lh_input ){
-	list_handler *lh_comp_table = init_default_comp_table( NULL );
-	list_handler *lh_jmp_table = init_default_jmp_table( NULL );	
+	list_handler *lh_comp_table = init_default_comp_table();
+	list_handler *lh_jmp_table = init_default_jmp_table();	
 	list_node *node = lh_input->head;
 	list_node *node_last = last( lh_input->head );
 	list_node *node_tmp = NULL;
@@ -658,10 +700,16 @@ list_handler *replace_instructions( list_handler *lh_input ){
 	return lh_output;
 }
 
+/**
+ * @brief A partire da una list_handler contenente la lista dei caratteri delle istruzione hack assembler,  codifica le istruzioni contenute in sequenze binarie hack (caratteri ascii '1'-'0')
+ * 
+ * @param lh_input :  list_handler contenente una lista di caratteri grezzi di istruzioni da codificare
+ * @return list_handler* il puntatore di una nuova list_handler elaborata contenente le sequenze di bit (caratteri ascii '1'-'0') codificate in hack
+ */
 list_handler *assembler( list_handler *lh_input ){	
 	list_handler *lh_symbol_table = NULL;
 	list_handler *lh_output = NULL;
-	lh_symbol_table = init_default_symbol_table( lh_symbol_table );
+	lh_symbol_table = init_default_symbol_table();
 
 	#ifdef DEBUG
 	printf( "\n###### Inizio Rimpiazzo Simboli ######\n");
@@ -713,6 +761,10 @@ int main( int nArgs, char **args ){
 					else{
 						printf("file '%s' letto con successo\n", filename);
 						
+						#ifndef DEBUG
+						printf( "Si consiglia di ricompilare decommentando prima la definizione di 'DEBUG' in utility.h se si vuole ottenere un feedback grafico delle operazioni che l'assembler sta elaborando\n" );
+						#endif
+
 						#ifdef DEBUG
 						printf("caratteri letti: %d\n", size(  lh_input->head, true ) );
 						list_node_print( "%c", lh_input->head );

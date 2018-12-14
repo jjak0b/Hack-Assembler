@@ -184,6 +184,12 @@ int countDigits( int n ){
 	}
 }
 
+/**
+ * @brief Converte un numero intero in una stringa, contenente come caratteri le cifre del numero dato
+ * PreCondition: n > 0
+ * @param n 
+ * @return char* : il puntatore alla stringa (contenente \0)
+ */
 char *int_to_string( int n ){
 	int n_digit = countDigits( n );
 	char *str = (char*)malloc( sizeof(char) * ( n_digit + 1 ) );
@@ -224,6 +230,15 @@ char *list_to_string( list_node *head, int *size_str ){
 	return buffer;
 }
 
+/**
+ * @brief Data una lista contenente booleani (bool definito da questa libreria), restituisce il puntatore alla stringa che ne contenente le cifre booleane '1'-'0'
+ * PreCondition: 	head deve essere una lista dedicata a valori di tipo bool
+ * 					size_str = NULL se non si vuole ottenere la dimensione allocata alla stringa
+ * PostCondition: 	nel variabile puntata da size_str viene memorizzata la dimensione allocata della stringa restituita
+ * @param head puntatore alla lista dedicata a valori di tipo bool
+ * @param size_str indirizzo della variabile in cui memorizzare la dimensione della stringa
+ * @return char* 
+ */
 char *list_binary_to_string( list_node *head, int *size_str ){
 	list_node *tmp = head;
 	int size_s = size(head, true ) + 1;
@@ -274,6 +289,12 @@ list_handler *string_to_list( char str[] ){
 	return NULL;
 }
 
+/**
+ * @brief Dato un numero restituisce il puntatore alla list_handler contenente la lista delle cifre intere (allocate) del valore intero dato
+ * PreCondition: n > 0
+ * @param n 
+ * @return list_handler* 
+ */
 list_handler *int_to_list( int n ){
 	list_handler *handler =  NULL;
 	int *n_tmp = (int*)malloc( sizeof( int ) );
@@ -298,6 +319,14 @@ list_handler *int_to_list( int n ){
 	return handler;
 }
 
+/**
+ * @brief dato un valore e un numero massimo di bit, resitituisce la lista delle cifre booleane (allocate) codificate dal valore intero dato in sequenza binaria
+ * PreCondition: n > 0
+ * PostCondition: Sono inseriti nella lista solo i primi max_bit_count bit (ovvero di tipo bool) più significativi
+ * @param n : l'intero da convertire in binario
+ * @param max_bit_count Il numero di bit massimi da ottenere
+ * @return list_handler*  puntatore alla list_handler contenente la lista delle cifre booleane (allocate) codificate dal valore intero dato
+ */
 list_handler *int_to_binary_list( int n, int unsigned max_bit_count ){
 	list_handler *binary = NULL;
 	bool *bit = NULL;
@@ -309,12 +338,6 @@ list_handler *int_to_binary_list( int n, int unsigned max_bit_count ){
 		binary = enqueue( binary, bit );
 		c += 1;
 	}
-	/*
-	while( c < 16 ){// bit a 0 di padding
-		bit = malloc( sizeof( bool ) );
-		*bit = false;
-		binary = enqueue( binary, bit );
-	}*/
 	binary->head = list_node_reverse( binary->head );
 	return binary;
 }

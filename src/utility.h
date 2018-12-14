@@ -1,7 +1,8 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
-// #define DEBUG /*IMPORTANTE: Disabilitare prima di consegnare */
+// #define DEBUG
+
 /*
 	Per usare meno spazio occupato da una variabile che io considero essere booleana,
 	potrei considerare 'unsigned char' di 1 solo byte per usare il booleano (memorizzando comunque interi) ma non vorrei essere frainteso
@@ -87,6 +88,12 @@ bool isNumber( char *str, bool isStr);
  */
 bool int_to_strbuffer( int value, char *destination, int destination_size );
 
+/**
+ * @brief Converte un numero intero in una stringa, contenente come caratteri le cifre del numero dato
+ * PreCondition: n > 0
+ * @param n 
+ * @return char* : il puntatore alla stringa (contenente \0)
+ */
 char *int_to_string( int n );
 
 
@@ -102,6 +109,15 @@ char *int_to_string( int n );
  */
 char *list_to_string( list_node *head, int *size_str );
 
+/**
+ * @brief Data una lista contenente booleani (bool definito da questa libreria), restituisce il puntatore alla stringa che ne contenente le cifre booleane '1'-'0'
+ * PreCondition: 	head deve essere una lista dedicata a valori di tipo bool
+ * 					size_str = NULL se non si vuole ottenere la dimensione allocata alla stringa
+ * PostCondition: 	nel variabile puntata da size_str viene memorizzata la dimensione allocata della stringa restituita
+ * @param head puntatore alla lista dedicata a valori di tipo bool
+ * @param size_str indirizzo della variabile in cui memorizzare la dimensione della stringa
+ * @return char* 
+ */
 char *list_binary_to_string( list_node *head, int *size_str );
 
 /*To list*/
@@ -114,10 +130,33 @@ char *list_binary_to_string( list_node *head, int *size_str );
  */
 list_handler *string_to_list( char *str );
 
+/**
+ * @brief Dato un numero restituisce il puntatore alla list_handler contenente la lista delle cifre intere (allocate) del valore intero dato
+ * PreCondition: n > 0
+ * @param n 
+ * @return list_handler* 
+ */
 list_handler *int_to_list( int n );
 
+/**
+ * @brief dato un valore e un numero massimo di bit, resitituisce la lista delle cifre booleane (allocate) codificate dal valore intero dato in sequenza binaria
+ * PreCondition: n > 0
+ * PostCondition: Sono inseriti nella lista solo i primi max_bit_count bit (ovvero di tipo bool) più significativi
+ * @param n : l'intero da convertire in binario
+ * @param max_bit_count Il numero di bit massimi da ottenere
+ * @return list_handler*  puntatore alla list_handler contenente la lista delle cifre booleane (allocate) codificate dal valore intero dato
+ */
 list_handler *int_to_binary_list( int n, int unsigned max_bit_count );
 
+/**
+ * @brief indica se subStr è una sottostringa in str
+ * Precondition:  str e subStr devono essere stringhe con '\0'
+ * 				  se start_index != NULL verrà memorizzato l'indice dove inizia subStr in str
+ * @param str 
+ * @param subStr 
+ * @return true se subStr è una sotto stringa di str
+ * @return false altrimenti
+ */
 bool isSubstr(const char *str, const char *subStr, int *start_index);
 
 #endif
